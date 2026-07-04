@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>e-PBD Pendidikan Islam</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+html,body{margin:0; padding:0;}
+.pbd-app{
+  --bg:#F5F4EF; --surface:#FFFFFF; --surface-alt:#EFEEE6;
+  --primary:#0E5C43; --primary-dark:#093D2C; --primary-light:#E4EFE9;
+  --gold:#B8902E; --gold-light:#F3E7C9;
+  --ink:#1B211D; --muted:#62706A; --border:#DEDCD0;
+  --danger:#B3261E; --danger-light:#F7E4E2;
+  --tp0:#D3D1C4; --tp1:#CFE3D7; --tp2:#AAD1BC; --tp3:#82BC9C; --tp4:#569E7C; --tp5:#2E7D4F; --tp6:#B8902E;
+  --radius:14px;
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+  color:var(--ink); background:var(--bg);
+  min-height:100vh; width:100%; position:relative; box-sizing:border-box;
+  font-size:14px; line-height:1.5;
+}
+.pbd-app *{box-sizing:border-box;}
+.pbd-app .mono{font-family:'JetBrains Mono',monospace;}
+.pbd-app button{font-family:inherit; cursor:pointer;}
+.pbd-app input,.pbd-app select,.pbd-app textarea{font-family:inherit; font-size:14px;}
+.pbd-app ::selection{background:var(--gold-light);}
+
+/* ---------- Scrollbar ---------- */
+.pbd-app ::-webkit-scrollbar{width:8px; height:8px;}
+.pbd-app ::-webkit-scrollbar-thumb{background:#C7C4B4; border-radius:8px;}
+
+/* ---------- Login ---------- */
+.pbd-login{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:
+    radial-gradient(circle at 12% 15%, rgba(184,144,46,0.10), transparent 40%),
+    radial-gradient(circle at 88% 85%, rgba(14,92,67,0.14), transparent 45%),
+    var(--bg);
+  padding:32px; position:relative; overflow:hidden;
+}
+.pbd-login .star-corner{position:absolute; opacity:0.08; pointer-events:none;}
+.pbd-login .star-tl{top:-40px; left:-40px; width:220px; height:220px;}
+.pbd-login .star-br{bottom:-50px; right:-50px; width:260px; height:260px;}
+.login-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:20px;
+  width:100%; max-width:420px; padding:40px 36px 32px; box-shadow:0 24px 60px -20px rgba(9,61,44,0.25);
+  position:relative; z-index:1;
+}
+.login-badge{
+  width:56px; height:56px; border-radius:14px; background:var(--primary);
+  display:flex; align-items:center; justify-content:center; margin:0 auto 18px;
+  box-shadow:0 8px 20px -6px rgba(14,92,67,0.5);
+}
+.login-eyebrow{text-align:center; letter-spacing:0.14em; text-transform:uppercase; font-size:11px; font-weight:700; color:var(--gold); margin-bottom:6px;}
+.login-title{text-align:center; font-size:22px; font-weight:800; color:var(--primary-dark); margin:0 0 4px;}
+.login-sub{text-align:center; font-size:12.5px; color:var(--muted); margin:0 0 28px;}
+.field{margin-bottom:16px;}
+.field label{display:block; font-size:12px; font-weight:700; color:var(--primary-dark); margin-bottom:6px; letter-spacing:0.02em;}
+.field input,.field select,.field textarea{
+  width:100%; padding:11px 13px; border:1.5px solid var(--border); border-radius:10px;
+  background:#FCFBF8; color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light);}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  padding:11px 18px; border-radius:10px; border:1.5px solid transparent; font-weight:700; font-size:13.5px;
+  transition:transform .1s, filter .15s; white-space:nowrap;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--primary); color:#fff;}
+.btn-primary:hover{filter:brightness(1.08);}
+.btn-gold{background:var(--gold); color:#fff;}
+.btn-gold:hover{filter:brightness(1.08);}
+.btn-outline{background:transparent; border-color:var(--border); color:var(--ink);}
+.btn-outline:hover{border-color:var(--primary); color:var(--primary);}
+.btn-danger{background:var(--danger-light); color:var(--danger); border-color:transparent;}
+.btn-danger:hover{filter:brightness(0.97);}
+.btn-ghost{background:transparent; color:var(--muted); border-color:transparent; padding:8px 10px;}
+.btn-ghost:hover{background:var(--surface-alt); color:var(--ink);}
+.btn-block{width:100%;}
+.btn-sm{padding:7px 12px; font-size:12.5px; border-radius:8px;}
+.login-error{background:var(--danger-light); color:var(--danger); font-size:12.5px; font-weight:600; padding:9px 12px; border-radius:9px; margin-bottom:14px; display:none;}
+.login-hint{text-align:center; font-size:11.5px; color:var(--muted); margin-top:20px; border-top:1px dashed var(--border); padding-top:16px;}
+
+/* ---------- Shell ---------- */
+.shell{display:none; min-height:100vh;}
+.shell.active{display:flex;}
+.sidebar{
+  width:236px; flex-shrink:0; background:var(--primary-dark); color:#EAF3EE;
+  display:flex; flex-direction:column; padding:20px 14px; position:sticky; top:0; height:100vh;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px; border-bottom:1px solid rgba(255,255,255,0.12); margin-bottom:16px;}
+.brand-badge{width:38px; height:38px; border-radius:10px; background:var(--gold); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.brand-text .t1{font-size:13.5px; font-weight:800; line-height:1.15;}
+.brand-text .t2{font-size:10.5px; color:#A9C6B8; letter-spacing:0.04em;}
+.navgroup{margin-bottom:6px;}
+.navlabel{font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:#7FA491; font-weight:700; padding:10px 10px 6px;}
+.navitem{
+  display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:#CFE3D7;
+  font-size:13.5px; font-weight:600; margin-bottom:2px; transition:background .15s, color .15s;
+}
+.navitem svg{flex-shrink:0; opacity:0.85;}
+.navitem:hover{background:rgba(255,255,255,0.07); color:#fff;}
+.navitem.active{background:var(--gold); color:#fff;}
+.navitem.active svg{opacity:1;}
+.sidebar-foot{margin-top:auto; padding-top:14px; border-top:1px solid rgba(255,255,255,0.12);}
+.who{display:flex; align-items:center; gap:9px; padding:8px 6px; margin-bottom:6px;}
+.who-avatar{width:32px; height:32px; border-radius:50%; background:var(--gold); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#fff; flex-shrink:0;}
+.who-name{font-size:12.5px; font-weight:700; color:#fff; line-height:1.2;}
+.who-role{font-size:10.5px; color:#A9C6B8;}
+
+.main{flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; padding:16px 28px;
+  background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5;
+}
+.topbar h1{font-size:18px; font-weight:800; margin:0; color:var(--primary-dark);}
+.topbar .crumb{font-size:12px; color:var(--muted); margin-top:2px;}
+.content{padding:24px 28px 60px; flex:1;}
+
+/* ---------- Cards / grid ---------- */
+.grid{display:grid; gap:16px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+@media(max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px;}
+.card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.card-title{font-size:14px; font-weight:800; color:var(--primary-dark); margin:0;}
+.card-sub{font-size:11.5px; color:var(--muted); margin-top:1px;}
+
+.stat-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; position:relative; overflow:hidden;}
+.stat-card .icon-badge{width:36px; height:36px; border-radius:10px; background:var(--primary-light); display:flex; align-items:center; justify-content:center; color:var(--primary); margin-bottom:12px;}
+.stat-card .val{font-size:26px; font-weight:800; color:var(--primary-dark); font-family:'JetBrains Mono',monospace;}
+.stat-card .lbl{font-size:12px; color:var(--muted); font-weight:600; margin-top:2px;}
+
+/* ---------- Buttons row / filters ---------- */
+.toolbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+.pill-select{padding:8px 12px; border:1.5px solid var(--border); border-radius:9px; background:#fff; font-weight:600; font-size:12.5px; color:var(--ink);}
+.search-box{position:relative;}
+.search-box input{padding-left:34px;}
+.search-box svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--muted);}
+
+/* ---------- Table ---------- */
+.tbl{width:100%; border-collapse:collapse;}
+.tbl th{text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); font-weight:700; padding:9px 12px; border-bottom:1.5px solid var(--border);}
+.tbl td{padding:11px 12px; border-bottom:1px solid var(--border); font-size:13px;}
+.tbl tr:hover td{background:var(--surface-alt);}
+.tbl tr:last-child td{border-bottom:none;}
+
+/* ---------- Badges / chips ---------- */
+.chip{display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:700;}
+.chip-kelas{background:var(--primary-light); color:var(--primary-dark);}
+.chip-status-Diterima{background:#E1F2E7; color:#1E7A46;}
+.chip-status-Draf{background:#F1EEE2; color:#8A7A45;}
+.chip-status-PerluPembetulan{background:var(--danger-light); color:var(--danger);}
+.chip-tahap-rendah{background:#F7E4E2; color:#A3402F;}
+.chip-tahap-sederhana{background:#FBF0D6; color:#95721B;}
+.chip-tahap-tinggi{background:#E1F2E7; color:#1E7A46;}
+.tp-chip{display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:26px; border-radius:8px; font-weight:800; font-size:12.5px; font-family:'JetBrains Mono',monospace; color:#fff;}
+
+/* ---------- Empty state ---------- */
+.empty{text-align:center; padding:48px 20px; color:var(--muted);}
+.empty svg{margin-bottom:10px; opacity:0.5;}
+.empty .e-title{font-weight:700; color:var(--ink); font-size:14px; margin-bottom:4px;}
+.empty .e-sub{font-size:12.5px;}
+
+/* ---------- Student list (murid) ---------- */
+.student-row{display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:12px; margin-bottom:8px; background:#fff; transition:border-color .15s;}
+.student-row:hover{border-color:var(--primary);}
+.s-avatar{width:38px; height:38px; border-radius:10px; background:var(--primary-light); color:var(--primary-dark); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0;}
+.s-name{font-weight:700; font-size:13.5px;}
+.s-meta{font-size:11.5px; color:var(--muted);}
+
+/* ---------- Class chip list ---------- */
+.class-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
+.class-tab{padding:8px 14px; border-radius:999px; border:1.5px solid var(--border); font-weight:700; font-size:12.5px; background:#fff; color:var(--muted);}
+.class-tab.active{background:var(--primary); border-color:var(--primary); color:#fff;}
+
+/* ---------- Modal ---------- */
+.modal-overlay{position:fixed; inset:0; background:rgba(15,25,20,0.55); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
+.modal-overlay.active{display:flex;}
+.modal-box{background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; padding:24px 26px; box-shadow:0 30px 70px -20px rgba(0,0,0,0.35);}
+.modal-box.wide{max-width:640px;}
+.modal-title{font-size:16px; font-weight:800; color:var(--primary-dark); margin:0 0 4px;}
+.modal-sub{font-size:12px; color:var(--muted); margin-bottom:18px;}
+.modal-foot{display:flex; justify-content:flex-end; gap:10px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border);}
+.modal-close{position:absolute;}
+
+/* ---------- Toast ---------- */
+.toast-wrap{position:fixed; top:20px; right:20px; z-index:200; display:flex; flex-direction:column; gap:8px;}
+.toast{padding:12px 16px; border-radius:10px; background:var(--primary-dark); color:#fff; font-size:12.5px; font-weight:600; box-shadow:0 10px 25px -8px rgba(0,0,0,0.3); animation:toastin .2s ease; max-width:300px;}
+.toast.err{background:var(--danger);}
+@keyframes toastin{from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);}}
+
+/* ---------- Semester tabs ---------- */
+.seg{display:inline-flex; background:var(--surface-alt); border-radius:10px; padding:3px; gap:2px;}
+.seg button{padding:8px 16px; border-radius:8px; font-weight:700; font-size:12.5px; background:transparent; color:var(--muted); border:none;}
+.seg button.active{background:#fff; color:var(--primary-dark); box-shadow:0 1px 4px rgba(0,0,0,0.12);}
+
+/* ---------- TP Ladder (signature element) ---------- */
+.tp-ladder{display:flex; align-items:flex-end; gap:5px; height:64px; margin:6px 0;}
+.tp-ladder .rung{flex:1; border-radius:5px 5px 3px 3px; position:relative; display:flex; align-items:flex-start; justify-content:center; padding-top:4px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:800; color:#fff; opacity:0.35;}
+.tp-ladder .rung.on{opacity:1;}
+
+/* ---------- Evidence card ---------- */
+.evidence-card{border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:10px; background:#fff; display:flex; gap:12px; align-items:flex-start;}
+.ev-thumb{width:52px; height:52px; border-radius:9px; background:var(--surface-alt); flex-shrink:0; display:flex; align-items:center; justify-content:center; color:var(--muted); overflow:hidden;}
+.ev-thumb img{width:100%; height:100%; object-fit:cover;}
+.ev-body{flex:1; min-width:0;}
+.ev-title{font-weight:700; font-size:13px; margin-bottom:2px;}
+.ev-meta{font-size:11px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;}
+.ev-actions{display:flex; gap:6px; flex-shrink:0;}
+
+/* ---------- Bars (custom charts) ---------- */
+.bar-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+.bar-label{width:64px; flex-shrink:0; font-size:11.5px; font-weight:700; color:var(--ink); font-family:'JetBrains Mono',monospace;}
+.bar-track{flex:1; background:var(--surface-alt); border-radius:6px; height:20px; overflow:hidden; position:relative;}
+.bar-fill{height:100%; border-radius:6px; transition:width .4s ease; display:flex; align-items:center; justify-content:flex-end; padding-right:8px;}
+.bar-val{width:34px; text-align:right; font-size:11.5px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--primary-dark);}
+
+.hbar-group{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+.hbar-name{width:96px; flex-shrink:0; font-size:12px; font-weight:700;}
+.hbar-track{flex:1; background:var(--surface-alt); border-radius:8px; height:26px; position:relative; overflow:hidden;}
+.hbar-fill{height:100%; border-radius:8px; background:linear-gradient(90deg, var(--primary), var(--gold));}
+.hbar-num{position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--primary-dark);}
+
+/* ---------- Descriptor table ---------- */
+.desc-row{display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); margin-bottom:8px;}
+.desc-tp{width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:13px; color:#fff; flex-shrink:0;}
+.desc-text{font-size:12.5px;}
+.desc-text b{display:block; font-size:12.5px; margin-bottom:1px;}
+
+/* ---------- Print report ---------- */
+.print-report{display:none;}
+@media print{
+  body *{visibility:hidden;}
+  .print-report, .print-report *{visibility:visible;}
+  .print-report{display:block !important; position:absolute; left:0; top:0; width:100%;}
+}
+.rpt-page{width:100%; max-width:760px; margin:0 auto; padding:26px; font-family:'Plus Jakarta Sans',sans-serif; color:#1B211D;}
+.rpt-head{display:flex; align-items:center; gap:14px; border-bottom:3px solid #0E5C43; padding-bottom:14px; margin-bottom:18px;}
+.rpt-emblem{width:52px; height:52px; border-radius:50%; background:#0E5C43; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0;}
+.rpt-head h2{margin:0; font-size:16px; color:#093D2C;}
+.rpt-head p{margin:1px 0 0; font-size:11px; color:#62706A;}
+.rpt-grid{display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; font-size:12.5px; margin-bottom:16px; background:#F5F4EF; padding:12px 16px; border-radius:10px;}
+.rpt-grid div b{color:#093D2C;}
+.rpt-sec-title{font-size:13px; font-weight:800; color:#093D2C; margin:18px 0 8px; padding-bottom:5px; border-bottom:1.5px solid #DEDCD0;}
+.rpt-tp-box{display:flex; gap:16px; align-items:center; padding:12px 16px; background:#F5F4EF; border-radius:10px; margin-bottom:10px;}
+.rpt-ev-item{font-size:11.5px; padding:7px 0; border-bottom:1px dashed #DEDCD0; display:flex; justify-content:space-between; gap:8px;}
+.rpt-note{font-size:12px; background:#FBF8F0; border-left:3px solid #B8902E; padding:9px 12px; border-radius:6px; margin-top:6px;}
+.rpt-foot{margin-top:26px; display:flex; justify-content:space-between; font-size:11px; color:#62706A;}
+.rpt-sig{margin-top:40px; width:200px; border-top:1px solid #1B211D; padding-top:4px; text-align:center; font-size:11px;}
+
+@media print{
+  @page{size:A4; margin:14mm;}
+}
+
+.hidden{display:none !important;}
+.text-muted{color:var(--muted);}
+.mb-0{margin-bottom:0;}
+.tbl-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+.mobile-menu-btn{display:none;}
+.sidebar-overlay{position:fixed; inset:0; background:rgba(9,15,12,0.5); z-index:45; display:none;}
+.sidebar-overlay.show{display:block;}
+
+/* ================= RESPONSIVE: TABLET ================= */
+@media (max-width:960px){
+  .sidebar{position:fixed; top:0; left:-256px; height:100vh; z-index:50; box-shadow:10px 0 30px rgba(0,0,0,0.18); transition:left .25s ease;}
+  .sidebar.open{left:0;}
+  .mobile-menu-btn{display:inline-flex;}
+  .topbar{padding:14px 16px;}
+  .content{padding:18px 16px 50px;}
+  .grid-4{grid-template-columns:repeat(2,1fr);}
+  .grid-3{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ================= RESPONSIVE: PHONE ================= */
+@media (max-width:640px){
+  .grid-4{grid-template-columns:repeat(2,1fr); gap:10px;}
+  .grid-3{grid-template-columns:1fr;}
+  .grid-2{grid-template-columns:1fr;}
+  .topbar h1{font-size:16px;}
+  .topbar .crumb{font-size:11px;}
+  .topbar > button span{display:none;}
+  .content{padding:14px 12px 50px;}
+  .card{padding:14px;}
+  .stat-card{padding:14px;}
+  .stat-card .val{font-size:21px;}
+  .modal-box{padding:18px 16px; max-width:calc(100vw - 24px); border-radius:14px;}
+  .modal-box.wide{max-width:calc(100vw - 24px);}
+  .student-row{flex-wrap:wrap; padding:10px;}
+  .student-row .s-meta, .student-row .s-name{max-width:100%;}
+  .evidence-card{flex-wrap:wrap;}
+  .ev-actions{width:100%; justify-content:flex-end; margin-top:6px;}
+  .toolbar{gap:8px;}
+  .toolbar .search-box input{width:100% !important;}
+  .toolbar{flex-direction:column; align-items:stretch;}
+  .toolbar > *{width:100%;}
+  .toolbar .btn{justify-content:center;}
+  .class-tabs{overflow-x:auto; flex-wrap:nowrap; padding-bottom:6px;}
+  .class-tab{flex-shrink:0;}
+  .seg{width:100%; overflow-x:auto;}
+  .seg button{flex:1; white-space:nowrap;}
+  .hbar-name{width:72px; font-size:11px;}
+  .bar-label{width:44px; font-size:10.5px;}
+  .rpt-page{padding:14px;}
+  .rpt-grid{grid-template-columns:1fr;}
+  .login-card{padding:30px 22px 26px;}
+  .toast-wrap{left:12px; right:12px; top:12px;}
+  .toast{max-width:100%;}
+}
+@media (max-width:960px) and (min-width:641px){
+  .toolbar{flex-wrap:wrap;}
+}
+</style>
+</head>
+<body>
+
+<div class="pbd-app" id="pbdRoot">
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- ============ LOGIN ============ -->
+  <div class="pbd-login" id="loginScreen">
+    <svg class="star-corner star-tl" viewBox="0 0 100 100"><path d="M50 0 L61 39 L100 50 L61 61 L50 100 L39 61 L0 50 L39 39 Z" fill="#0E5C43"/></svg>
+    <svg class="star-corner star-br" viewBox="0 0 100 100"><path d="M50 0 L61 39 L100 50 L61 61 L50 100 L39 61 L0 50 L39 39 Z" fill="#B8902E"/></svg>
+    <div class="login-card">
+      <div class="login-badge">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#fff"/></svg>
+      </div>
+      <div class="login-eyebrow">Panitia Pendidikan Islam</div>
+      <h1 class="login-title">e-PBD</h1>
+      <p class="login-sub">Sistem Pengurusan Eviden &amp; Penjanaan TP Automatik</p>
+      <div class="login-error" id="loginError">Nama pengguna atau kata laluan tidak sah.</div>
+      <div class="field">
+        <label>Nama Pengguna</label>
+        <input type="text" id="loginUser" placeholder="cth: admin" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Kata Laluan</label>
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Log Masuk
+      </button>
+      <div class="login-hint">Akaun awal: <b>admin</b> / <b>admin123</b> — sila tukar &amp; tambah akaun guru selepas log masuk.</div>
+    </div>
+  </div>
+
+  <!-- ============ APP SHELL ============ -->
+  <div class="shell" id="shell">
+    <aside class="sidebar" id="sidebarEl">
+      <div class="brand">
+        <div class="brand-badge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#fff"/></svg>
+        </div>
+        <div class="brand-text">
+          <div class="t1">e-PBD</div>
+          <div class="t2">Pendidikan Islam</div>
+        </div>
+      </div>
+
+      <div class="navgroup" id="navGroup"></div>
+
+      <div class="sidebar-foot">
+        <div class="who">
+          <div class="who-avatar" id="whoAvatar">A</div>
+          <div>
+            <div class="who-name" id="whoName">-</div>
+            <div class="who-role" id="whoRole">-</div>
+          </div>
+        </div>
+        <button class="navitem" style="width:100%; background:rgba(255,255,255,0.06);" onclick="doLogout()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Log Keluar
+        </button>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <div class="main">
+      <div class="topbar">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="btn btn-outline btn-sm mobile-menu-btn" onclick="toggleSidebar()" aria-label="Buka menu">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+          </button>
+          <div>
+            <h1 id="pageTitle">Dashboard</h1>
+            <div class="crumb" id="pageCrumb">Ringkasan keseluruhan panitia</div>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="openDescModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2 3.5"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Rujukan TP</span>
+        </button>
+      </div>
+      <div class="content" id="content"></div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL ============ -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box" id="modalBox"></div>
+  </div>
+
+  <!-- ============ PRINT REPORT (hidden except when printing) ============ -->
+  <div class="print-report" id="printReport"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= KONFIGURASI SUPABASE ================= */
+/* Gantikan dua nilai di bawah dengan Project URL & anon public key
+   daripada Supabase Dashboard > Project Settings > API */
+const SUPABASE_URL = 'https://klzcvoyfdnswqugmjaon.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ZONx449Qwufphgjf7CndmQ_C5Sn2I2e';
+const EVIDENCE_BUCKET = 'evidence';
+let supabase = null;
+const isConfigured = !SUPABASE_URL.includes('YOUR-PROJECT-REF') && !SUPABASE_ANON_KEY.includes('YOUR-ANON-PUBLIC-KEY');
+if(isConfigured && window.supabase){
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+/* ================= ICONS ================= */
+const I = {
+  dashboard:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+  users:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17.5" cy="8.5" r="2.6"/><path d="M15.5 14.3c2.7 0.5 4.5 2.6 4.5 5.7"/></svg>',
+  book:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5v-17Z"/><path d="M4 19a2.5 2.5 0 0 1 2.5-2.5H20"/></svg>',
+  chart:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="12" width="3.2" height="8"/><rect x="10.4" y="7" width="3.2" height="13"/><rect x="14.8" y="3" width="3.2" height="17"/></svg>',
+  cog:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.5-2-3.4-2.3.7a7.7 7.7 0 0 0-1.7-1L15 3h-4l-.4 2.3a7.7 7.7 0 0 0-1.7 1l-2.3-.7-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.3-.7a7.7 7.7 0 0 0 1.7 1L11 21h4l.4-2.3a7.7 7.7 0 0 0 1.7-1l2.3.7 2-3.4-2-1.6Z"/></svg>',
+  plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  trash:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"/><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/><path d="M6 7l1 13.5A1.5 1.5 0 0 0 8.5 22h7a1.5 1.5 0 0 0 1.5-1.5L18 7"/></svg>',
+  edit:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.5 3.5 20 8l-11 11H4.5v-4.5L15.5 3.5Z"/></svg>',
+  printer:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M6 17v4h12v-4"/></svg>',
+  upload:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17"/></svg>',
+  x:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>',
+  image:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+  file:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h9l5 5v15H6Z"/><path d="M15 2v5h5"/></svg>',
+  back:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="15 6 9 12 15 18"/></svg>',
+  search:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.4" y2="16.4"/></svg>',
+  star:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18 21 L12 16.5 L6 21 L8 13.5 L2 9 L9.5 9 Z"/></svg>',
+  info:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+};
+
+/* ================= CONSTANTS ================= */
+const TP_LABEL = {0:'Belum Ada',1:'TP1',2:'TP2',3:'TP3',4:'TP4',5:'TP5',6:'TP6'};
+const TP_COLOR = {0:'var(--tp0)',1:'var(--tp1)',2:'var(--tp2)',3:'var(--tp3)',4:'var(--tp4)',5:'var(--tp5)',6:'var(--tp6)'};
+const TP_COLOR_HEX = {0:'#D3D1C4',1:'#CFE3D7',2:'#AAD1BC',3:'#82BC9C',4:'#569E7C',5:'#2E7D4F',6:'#B8902E'};
+const TP_DESC = {
+  1:'Tahu — murid boleh mengenal dan menyatakan perkara asas.',
+  2:'Tahu dan Faham — murid faham konsep dan boleh menghuraikan.',
+  3:'Tahu, Faham dan Boleh Buat — murid boleh mengaplikasi dengan bimbingan.',
+  4:'Tahu, Faham dan Boleh Buat dengan Beradab — murid mengamalkan mengikut prosedur/adab yang betul.',
+  5:'Tahu, Faham dan Boleh Buat dengan Beradab Mithali — murid mengamalkan secara sendiri tanpa bimbingan.',
+  6:'Tahu, Faham dan Boleh Buat dengan Beradab Mithali Boleh Menjadi Contoh — murid menjadi role model kepada rakan.'
+};
+const STATUS_LIST = ['Draf','Diterima','Perlu Pembetulan'];
+const TAHAP_LIST = [
+  {v:'rendah', l:'Rendah'},
+  {v:'sederhana', l:'Sederhana'},
+  {v:'tinggi', l:'Tinggi'}
+];
+const SEMS = ['Penggal 1','Penggal 2'];
+
+/* ================= STATE ================= */
+let DB = { users:[], classes:[], students:[], topics:{}, evidence:[], notes:[], overrides:[] };
+let session = null;
+let ui = { view:'dashboard', kelasFilter:'Semua', studentId:null, semester:'Penggal 1', analysisSemester:'Penggal 1', searchMurid:'', tajukTahun:'3', editingEvId:null, pendingFileObj:null };
+
+function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function tahunOfKelas(k){ const m=(k||'').match(/(\d+)/); return m?m[1]:'?'; }
+
+/* ================= STORAGE (SUPABASE) ================= */
+async function fullSync(table, localRows, keyCols, toRow){
+  const dbRows = localRows.map(toRow);
+  const keyOf = (row)=> keyCols.map(k=>row[k]).join('|');
+  const localKeys = new Set(dbRows.map(keyOf));
+  const { data: remote, error } = await supabase.from(table).select(keyCols.join(','));
+  if(error){ toast('Ralat baca "'+table+'": '+error.message, true); return false; }
+  const toDelete = (remote||[]).filter(r=> !localKeys.has(keyOf(r)));
+  for(const r of toDelete){
+    let q = supabase.from(table).delete();
+    keyCols.forEach(k=> q = q.eq(k, r[k]));
+    await q;
+  }
+  if(dbRows.length){
+    const { error: upErr } = await supabase.from(table).upsert(dbRows, {onConflict: keyCols.join(',')});
+    if(upErr){ toast('Ralat simpan "'+table+'": '+upErr.message, true); return false; }
+  }
+  return true;
+}
+
+async function loadDB(){
+  const [usersR, classesR, studentsR, topicsR, evidenceR, notesR, overridesR] = await Promise.all([
+    supabase.from('app_users').select('*'),
+    supabase.from('classes').select('*'),
+    supabase.from('students').select('*'),
+    supabase.from('topics').select('*'),
+    supabase.from('evidence').select('*'),
+    supabase.from('notes').select('*'),
+    supabase.from('overrides').select('*')
+  ]);
+  const users = (usersR.data||[]).map(u=>({id:u.id, username:u.username, password:u.password, name:u.name, role:u.role}));
+  const classes = (classesR.data||[]).map(c=>c.name);
+  const students = (studentsR.data||[]).map(s=>({id:s.id, name:s.name, kelas:s.kelas}));
+  const topics = {};
+  (topicsR.data||[]).forEach(t=>{ if(!topics[t.tahun]) topics[t.tahun]=[]; topics[t.tahun].push({id:t.id, title:t.title}); });
+  const evidence = (evidenceR.data||[]).map(e=>({id:e.id, studentId:e.student_id, semester:e.semester, topicId:e.topic_id, date:e.date, status:e.status, tahap:e.tahap, note:e.note, filePath:e.file_path, fileName:e.file_name, fileType:e.file_type}));
+  const notes = (notesR.data||[]).map(n=>({studentId:n.student_id, semester:n.semester, text:n.text}));
+  const overrides = (overridesR.data||[]).map(o=>({studentId:o.student_id, semester:o.semester, tp:o.tp}));
+
+  DB = { users, classes, students, topics, evidence, notes, overrides };
+  let seeded = false;
+  if(DB.users.length===0){
+    DB.users.push({id:uid(), username:'admin', password:'admin123', name:'Admin Panitia', role:'admin'});
+    seeded = true;
+  }
+  if(DB.classes.length===0){
+    DB.classes = ['Tahun 3A','Tahun 3B','Tahun 3E','Tahun 4A','Tahun 4C','Tahun 4D','Tahun 6B','Tahun 6C'];
+    seeded = true;
+  }
+  if(!DB.topics || Object.keys(DB.topics).length===0){
+    DB.topics = {
+      '3':[
+        {id:uid(), title:"Konsep Nama Allah Al-Alim & Al-Hakim"},
+        {id:uid(), title:"Konsep Bersuci Dalam Islam"},
+        {id:uid(), title:"Wahyu Teragung"},
+        {id:uid(), title:"Adab Tidur"}
+      ],
+      '4':[
+        {id:uid(), title:"Solat Yang Sempurna"},
+        {id:uid(), title:"Hadis Yang Muda Dikasihi Yang Tua Dihormati"},
+        {id:uid(), title:"Adab Menuntut Ilmu"},
+        {id:uid(), title:"Beriman Kepada Kitab"}
+      ],
+      '6':[
+        {id:uid(), title:"Konsep Sunat Ab'ad & Haiat"},
+        {id:uid(), title:"Nabi Muhammad & Masyarakat Mekkah"},
+        {id:uid(), title:"Konsep Bersyukur"},
+        {id:uid(), title:"Sunnah Rasulullah"}
+      ]
+    };
+    seeded = true;
+  }
+  if(seeded) await persist(['users','classes','topics']);
+}
+
+async function persist(parts){
+  for(const p of parts){
+    if(p==='users') await fullSync('app_users', DB.users, ['id'], u=>({id:u.id, username:u.username, password:u.password, name:u.name, role:u.role}));
+    else if(p==='classes') await fullSync('classes', DB.classes.map(name=>({name})), ['name'], c=>({name:c.name}));
+    else if(p==='students') await fullSync('students', DB.students, ['id'], s=>({id:s.id, name:s.name, kelas:s.kelas}));
+    else if(p==='topics'){
+      const flat = [];
+      Object.keys(DB.topics).forEach(tahun=> (DB.topics[tahun]||[]).forEach(t=> flat.push({id:t.id, tahun, title:t.title})));
+      await fullSync('topics', flat, ['id'], t=>t);
+    }
+    else if(p==='evidence') await fullSync('evidence', DB.evidence, ['id'], e=>({id:e.id, student_id:e.studentId, semester:e.semester, topic_id:e.topicId, date:e.date, status:e.status, tahap:e.tahap, note:e.note||null, file_path:e.filePath||null, file_name:e.fileName||null, file_type:e.fileType||null}));
+    else if(p==='notes') await fullSync('notes', DB.notes, ['student_id','semester'], n=>({student_id:n.studentId, semester:n.semester, text:n.text||''}));
+    else if(p==='overrides') await fullSync('overrides', DB.overrides, ['student_id','semester'], o=>({student_id:o.studentId, semester:o.semester, tp:o.tp}));
+  }
+}
+
+/* ================= TOAST ================= */
+function toast(msg, isErr){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (isErr?' err':'');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, 2600);
+}
+
+/* ================= AUTH ================= */
+window.doLogin = async function(){
+  if(!window.__dbReady){ toast('Sistem sedang memuatkan data, sila cuba sebentar lagi.', true); return; }
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const found = DB.users.find(x=>x.username.toLowerCase()===u.toLowerCase() && x.password===p);
+  const errEl = document.getElementById('loginError');
+  if(!found){ errEl.style.display='block'; return; }
+  errEl.style.display='none';
+  session = found;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('shell').classList.add('active');
+  document.getElementById('whoAvatar').textContent = found.name.charAt(0).toUpperCase();
+  document.getElementById('whoName').textContent = found.name;
+  document.getElementById('whoRole').textContent = found.role==='admin' ? 'Admin Panitia' : 'Guru';
+  buildNav();
+  navigate('dashboard');
+};
+window.doLogout = function(){
+  session = null;
+  document.getElementById('shell').classList.remove('active');
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginUser').value=''; document.getElementById('loginPass').value='';
+};
+
+/* ================= NAV ================= */
+function buildNav(){
+  const items = [
+    {v:'dashboard', l:'Dashboard', i:I.dashboard},
+    {v:'murid', l:'Murid & Kelas', i:I.users},
+    {v:'tajuk', l:'Tajuk Eviden', i:I.book},
+    {v:'analisis', l:'Analisis TP', i:I.chart}
+  ];
+  if(session.role==='admin') items.push({v:'akaun', l:'Akaun Guru', i:I.cog});
+  document.getElementById('navGroup').innerHTML = items.map(it=>
+    `<div class="navitem" data-v="${it.v}" onclick="navigate('${it.v}')">${it.i}<span>${it.l}</span></div>`
+  ).join('');
+}
+
+const TITLES = {
+  dashboard:['Dashboard','Ringkasan prestasi keseluruhan panitia'],
+  murid:['Murid & Kelas','Urus senarai kelas dan murid'],
+  tajuk:['Tajuk Eviden','Senarai tajuk mengikut tahun'],
+  analisis:['Analisis TP','Taburan, purata dan perbandingan kelas'],
+  akaun:['Akaun Guru','Urus akaun pengguna sistem'],
+  studentWorkspace:['Ruang Kerja Murid','Eviden, catatan dan laporan PBD']
+};
+
+window.toggleSidebar = function(){
+  document.getElementById('sidebarEl').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+};
+function closeSidebarIfMobile(){
+  if(window.innerWidth <= 960){
+    document.getElementById('sidebarEl').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+  }
+}
+
+window.navigate = function(view, params){
+  ui.view = view;
+  if(params) Object.assign(ui, params);
+  document.querySelectorAll('.navitem[data-v]').forEach(el=> el.classList.toggle('active', el.dataset.v===view));
+  const t = TITLES[view] || ['',''];
+  document.getElementById('pageTitle').textContent = t[0];
+  document.getElementById('pageCrumb').textContent = t[1];
+  const c = document.getElementById('content');
+  if(view==='dashboard') c.innerHTML = renderDashboard();
+  else if(view==='murid') c.innerHTML = renderMurid();
+  else if(view==='tajuk') c.innerHTML = renderTajuk();
+  else if(view==='analisis') c.innerHTML = renderAnalisis();
+  else if(view==='akaun') c.innerHTML = renderAkaun();
+  else if(view==='studentWorkspace') c.innerHTML = renderStudentWorkspace(ui.studentId);
+  closeSidebarIfMobile();
+  window.scrollTo(0,0);
+};
+
+/* ================= TP LOGIC ================= */
+function evidencesFor(studentId, semester){
+  return DB.evidence.filter(e=> e.studentId===studentId && e.semester===semester);
+}
+function computeAutoTP(evList){
+  if(!evList || evList.length===0) return 0;
+  const val = {rendah:1, sederhana:2, tinggi:3};
+  const avg = evList.reduce((s,e)=> s+(val[e.tahap]||1), 0) / evList.length;
+  const group = avg < 1.5 ? 1 : (avg < 2.5 ? 2 : 3);
+  const consistent = evList.length >= 3;
+  const within = consistent ? 2 : 1;
+  return (group-1)*2 + within;
+}
+function overrideFor(studentId, semester){
+  const o = DB.overrides.find(x=>x.studentId===studentId && x.semester===semester);
+  return o && o.tp!=null ? o.tp : null;
+}
+function finalTP(studentId, semester){
+  const ov = overrideFor(studentId, semester);
+  if(ov!=null) return ov;
+  return computeAutoTP(evidencesFor(studentId, semester));
+}
+function noteFor(studentId, semester){
+  const n = DB.notes.find(x=>x.studentId===studentId && x.semester===semester);
+  return n ? n.text : '';
+}
+
+/* ================= DASHBOARD ================= */
+function renderDashboard(){
+  const sem = ui.analysisSemester;
+  const totalMurid = DB.students.length;
+  const totalEviden = DB.evidence.filter(e=>e.semester===sem).length;
+  const tps = DB.students.map(s=> finalTP(s.id, sem));
+  const withTP = tps.filter(t=>t>0);
+  const purata = withTP.length ? (withTP.reduce((a,b)=>a+b,0)/withTP.length) : 0;
+  const dist = [0,0,0,0,0,0,0];
+  tps.forEach(t=> dist[t]++);
+  const kelasStats = DB.classes.map(k=>{
+    const studs = DB.students.filter(s=>s.kelas===k);
+    const kt = studs.map(s=>finalTP(s.id, sem)).filter(t=>t>0);
+    const avg = kt.length ? kt.reduce((a,b)=>a+b,0)/kt.length : 0;
+    return {kelas:k, avg, n:studs.length};
+  }).filter(k=>k.n>0);
+  const topKelas = kelasStats.slice().sort((a,b)=>b.avg-a.avg)[0];
+
+  return `
+    <div class="toolbar">
+      <div class="seg">
+        ${SEMS.map(s=>`<button class="${ui.analysisSemester===s?'active':''}" onclick="ui.analysisSemester='${s}'; navigate('dashboard')">${s}</button>`).join('')}
+      </div>
+    </div>
+    <div class="grid grid-4" style="margin-bottom:18px;">
+      <div class="stat-card">
+        <div class="icon-badge">${I.users}</div>
+        <div class="val">${totalMurid}</div>
+        <div class="lbl">Jumlah Murid</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon-badge">${I.file}</div>
+        <div class="val">${totalEviden}</div>
+        <div class="lbl">Eviden Dimuat Naik (${esc(sem)})</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon-badge">${I.chart}</div>
+        <div class="val">${purata? purata.toFixed(2):'-'}</div>
+        <div class="lbl">Purata TP Keseluruhan</div>
+      </div>
+      <div class="stat-card">
+        <div class="icon-badge">${I.star}</div>
+        <div class="val" style="font-size:18px;">${topKelas? esc(topKelas.kelas):'-'}</div>
+        <div class="lbl">Kelas Purata TP Tertinggi</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-head"><div><p class="card-title">Taburan TP (${esc(sem)})</p><p class="card-sub">Bilangan murid mengikut tahap penguasaan</p></div></div>
+        ${[0,1,2,3,4,5,6].map(t=>{
+          const max = Math.max(...dist,1);
+          const pct = (dist[t]/max*100);
+          return `<div class="bar-row">
+            <div class="bar-label">${TP_LABEL[t]}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${TP_COLOR_HEX[t]};"></div></div>
+            <div class="bar-val">${dist[t]}</div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><p class="card-title">Perbandingan Antara Kelas</p><p class="card-sub">Purata TP setiap kelas (${esc(sem)})</p></div></div>
+        ${kelasStats.length===0 ? emptyState('Tiada data','Tambah murid dan eviden untuk lihat perbandingan.') :
+          kelasStats.slice().sort((a,b)=>b.avg-a.avg).map(k=>{
+            const pct = (k.avg/6*100);
+            return `<div class="hbar-group">
+              <div class="hbar-name">${esc(k.kelas)}</div>
+              <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;"></div><div class="hbar-num">${k.avg.toFixed(2)}</div></div>
+            </div>`;
+          }).join('')
+        }
+      </div>
+    </div>
+  `;
+}
+
+function emptyState(title, sub){
+  return `<div class="empty">${I.info}<div class="e-title">${esc(title)}</div><div class="e-sub">${esc(sub)}</div></div>`;
+}
+
+/* ================= MURID & KELAS ================= */
+window.addKelas = async function(){
+  let name = prompt('Nama kelas baharu (contoh: Tahun 5B):');
+  if(!name) return;
+  name = name.replace(/['"]/g,'').trim();
+  if(!name) return;
+  if(DB.classes.includes(name)){ toast('Kelas sudah wujud.', true); return; }
+  DB.classes.push(name);
+  await persist(['classes']);
+  toast('Kelas "'+name+'" ditambah.');
+  navigate('murid');
+};
+window.deleteKelas = function(kelas){
+  showConfirm('Buang kelas "'+kelas+'"? Murid dalam kelas ini TIDAK akan dibuang, sila alihkan dahulu.', async ()=>{
+    DB.classes = DB.classes.filter(k=>k!==kelas);
+    await persist(['classes']);
+    if(ui.kelasFilter===kelas) ui.kelasFilter='Semua';
+    toast('Kelas dibuang.');
+    navigate('murid');
+  });
+};
+window.openAddMurid = function(){
+  const opts = DB.classes.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('');
+  openModal(`
+    <h3 class="modal-title">Tambah Murid</h3>
+    <p class="modal-sub">Masukkan maklumat murid baharu.</p>
+    <div class="field"><label>Nama Penuh</label><input type="text" id="mNama" placeholder="Nama murid"></div>
+    <div class="field"><label>Kelas</label><select id="mKelas">${opts}</select></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" onclick="saveMurid()">${I.plus} Tambah Murid</button>
+    </div>
+  `);
+};
+window.saveMurid = async function(){
+  const nama = document.getElementById('mNama').value.trim();
+  const kelas = document.getElementById('mKelas').value;
+  if(!nama){ toast('Sila masukkan nama murid.', true); return; }
+  DB.students.push({id:uid(), name:nama, kelas});
+  await persist(['students']);
+  toast('Murid "'+nama+'" ditambah.');
+  closeModal();
+  navigate('murid');
+};
+window.deleteMurid = function(id, name){
+  showConfirm('Buang murid "'+name+'"? Semua eviden, catatan dan TP murid ini akan turut dibuang.', async ()=>{
+    DB.students = DB.students.filter(s=>s.id!==id);
+    DB.evidence = DB.evidence.filter(e=>e.studentId!==id);
+    DB.notes = DB.notes.filter(n=>n.studentId!==id);
+    DB.overrides = DB.overrides.filter(o=>o.studentId!==id);
+    await persist(['students','evidence','notes','overrides']);
+    toast('Murid dibuang.');
+    navigate('murid');
+  });
+};
+
+function renderMurid(){
+  const kelasList = ['Semua', ...DB.classes];
+  let studs = DB.students.filter(s=> ui.kelasFilter==='Semua' || s.kelas===ui.kelasFilter);
+  if(ui.searchMurid) studs = studs.filter(s=> s.name.toLowerCase().includes(ui.searchMurid.toLowerCase()));
+
+  return `
+    <div class="toolbar">
+      <div class="search-box">${I.search}<input type="text" placeholder="Cari nama murid..." value="${esc(ui.searchMurid)}" oninput="ui.searchMurid=this.value; renderInto('murid')" style="width:220px;"></div>
+      <button class="btn btn-outline btn-sm" onclick="addKelas()">${I.plus} Tambah Kelas</button>
+      <button class="btn btn-primary btn-sm" onclick="openAddMurid()">${I.plus} Tambah Murid</button>
+    </div>
+    <div class="class-tabs">
+      ${kelasList.map(k=> `<div class="class-tab ${ui.kelasFilter===k?'active':''}" onclick="ui.kelasFilter='${esc(k)}'; navigate('murid')">${esc(k)}${k!=='Semua'?` <span style="opacity:.6" onclick="event.stopPropagation(); deleteKelas('${esc(k)}')">✕</span>`:''}</div>`).join('')}
+    </div>
+    <div class="card">
+      ${studs.length===0 ? emptyState('Tiada murid', 'Tambah murid menggunakan butang di atas.') :
+        studs.map(s=>{
+          const tp1 = finalTP(s.id,'Penggal 1'), tp2 = finalTP(s.id,'Penggal 2');
+          return `<div class="student-row">
+            <div class="s-avatar">${esc(s.name.charAt(0).toUpperCase())}</div>
+            <div style="flex:1; min-width:0; cursor:pointer;" onclick="navigate('studentWorkspace',{studentId:'${s.id}'})">
+              <div class="s-name">${esc(s.name)}</div>
+              <div class="s-meta">${esc(s.kelas)}</div>
+            </div>
+            <span class="tp-chip" style="background:${TP_COLOR[tp1]}" title="TP Penggal 1">${TP_LABEL[tp1]}</span>
+            <span class="tp-chip" style="background:${TP_COLOR[tp2]}" title="TP Penggal 2">${TP_LABEL[tp2]}</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigate('studentWorkspace',{studentId:'${s.id}'})">${I.edit}</button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteMurid('${s.id}','${esc(s.name).replace(/'/g,"")}')" style="color:var(--danger)">${I.trash}</button>
+          </div>`;
+        }).join('')
+      }
+    </div>
+  `;
+}
+window.renderInto = function(view){ document.getElementById('content').innerHTML = view==='murid'?renderMurid():renderTajuk(); };
+
+/* ================= TAJUK EVIDEN ================= */
+window.addTajuk = async function(){
+  const title = prompt('Nama tajuk eviden baharu untuk Tahun '+ui.tajukTahun+':');
+  if(!title) return;
+  if(!DB.topics[ui.tajukTahun]) DB.topics[ui.tajukTahun]=[];
+  DB.topics[ui.tajukTahun].push({id:uid(), title});
+  await persist(['topics']);
+  toast('Tajuk ditambah.');
+  navigate('tajuk');
+};
+window.deleteTajuk = function(tahun, id){
+  showConfirm('Buang tajuk ini?', async ()=>{
+    DB.topics[tahun] = DB.topics[tahun].filter(t=>t.id!==id);
+    await persist(['topics']);
+    toast('Tajuk dibuang.');
+    navigate('tajuk');
+  });
+};
+function renderTajuk(){
+  const tahuns = Object.keys(DB.topics).sort();
+  return `
+    <div class="toolbar">
+      <div class="seg">
+        ${tahuns.map(t=>`<button class="${ui.tajukTahun===t?'active':''}" onclick="ui.tajukTahun='${t}'; navigate('tajuk')">Tahun ${t}</button>`).join('')}
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addTajuk()">${I.plus} Tambah Tajuk</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><p class="card-title">Senarai Tajuk — Tahun ${esc(ui.tajukTahun)}</p><p class="card-sub">Tajuk ini akan dipaparkan semasa guru memuat naik eviden untuk murid tahun berkenaan.</p></div></div>
+      ${(DB.topics[ui.tajukTahun]||[]).length===0 ? emptyState('Tiada tajuk', 'Tambah tajuk untuk tahun ini.') :
+        `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tajuk</th><th style="width:80px;"></th></tr></thead><tbody>
+          ${(DB.topics[ui.tajukTahun]||[]).map(t=>`<tr><td>${esc(t.title)}</td><td><button class="btn btn-ghost btn-sm" onclick="deleteTajuk('${ui.tajukTahun}','${t.id}')" style="color:var(--danger)">${I.trash}</button></td></tr>`).join('')}
+        </tbody></table></div>`
+      }
+    </div>
+  `;
+}
+
+/* ================= STUDENT WORKSPACE ================= */
+function renderStudentWorkspace(studentId){
+  const s = DB.students.find(x=>x.id===studentId);
+  if(!s) return emptyState('Murid tidak dijumpai','Sila kembali ke senarai murid.');
+  const sem = ui.semester;
+  const evs = evidencesFor(s.id, sem);
+  const auto = computeAutoTP(evs);
+  const ov = overrideFor(s.id, sem);
+  const tahun = tahunOfKelas(s.kelas);
+  const topics = DB.topics[tahun] || [];
+
+  return `
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:12px;" onclick="navigate('murid')">${I.back} Kembali ke Senarai Murid</button>
+    <div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div class="s-avatar" style="width:52px;height:52px;font-size:18px;">${esc(s.name.charAt(0).toUpperCase())}</div>
+        <div>
+          <div style="font-weight:800; font-size:17px;">${esc(s.name)}</div>
+          <div class="s-meta">${esc(s.kelas)} · Tahun ${esc(tahun)}</div>
+        </div>
+      </div>
+      <button class="btn btn-gold" onclick="printLaporan('${s.id}')">${I.printer} Cetak Laporan PBD</button>
+    </div>
+
+    <div class="seg" style="margin-bottom:18px;">
+      ${SEMS.map(x=>`<button class="${sem===x?'active':''}" onclick="ui.semester='${x}'; navigate('studentWorkspace',{studentId:'${s.id}'})">${x}</button>`).join('')}
+    </div>
+
+    <div class="grid grid-2" style="align-items:start;">
+      <div class="card">
+        <div class="card-head"><div><p class="card-title">Tahap Penguasaan — ${esc(sem)}</p><p class="card-sub">Dijana automatik daripada eviden; guru boleh override.</p></div></div>
+        <div class="tp-ladder">
+          ${[1,2,3,4,5,6].map(t=>{
+            const on = t<= (ov!=null?ov:auto);
+            const h = 18 + t*7;
+            return `<div class="rung ${on?'on':''}" style="height:${h}px; background:${TP_COLOR_HEX[t]};">${on?t:''}</div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex; gap:16px; margin-top:12px; font-size:12.5px;">
+          <div><span class="text-muted">TP Automatik:</span> <b class="mono" style="color:var(--primary-dark)">${TP_LABEL[auto]}</b></div>
+          <div><span class="text-muted">TP Muktamad:</span> <b class="mono" style="color:var(--gold)">${TP_LABEL[ov!=null?ov:auto]}</b></div>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Override TP Muktamad (Keputusan Akhir Guru)</label>
+          <select id="ovSelect" onchange="saveOverride('${s.id}','${sem}', this.value)">
+            <option value="">Guna Auto (${TP_LABEL[auto]})</option>
+            ${[1,2,3,4,5,6].map(t=>`<option value="${t}" ${ov===t?'selected':''}>${TP_LABEL[t]} — override manual</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><p class="card-title">Catatan Guru — ${esc(sem)}</p><p class="card-sub">Ulasan keseluruhan penguasaan murid.</p></div></div>
+        <textarea id="noteArea" rows="6" placeholder="Tulis catatan perkembangan murid bagi ${esc(sem)}..." style="width:100%; padding:11px 13px; border:1.5px solid var(--border); border-radius:10px; resize:vertical;">${esc(noteFor(s.id,sem))}</textarea>
+        <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="saveNote('${s.id}','${sem}')">Simpan Catatan</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+      <div class="card-head">
+        <div><p class="card-title">Eviden — ${esc(sem)}</p><p class="card-sub">${evs.length} eviden dimuat naik</p></div>
+        <button class="btn btn-primary btn-sm" onclick="openAddEvidence('${s.id}','${sem}')">${I.upload} Tambah Eviden</button>
+      </div>
+      ${evs.length===0 ? emptyState('Tiada eviden lagi','Muat naik eviden pertama murid ini.') :
+        evs.map(e=>{
+          const topic = allTopicTitle(e.topicId, tahun);
+          return `<div class="evidence-card">
+            <div class="ev-thumb">${e.fileType && e.fileType.startsWith('image')? I.image : I.file}</div>
+            <div class="ev-body">
+              <div class="ev-title">${esc(topic)}</div>
+              <div class="ev-meta">
+                <span>📅 ${esc(e.date)}</span>
+                <span class="chip chip-tahap-${e.tahap}">${TAHAP_LIST.find(t=>t.v===e.tahap).l}</span>
+                <span class="chip chip-status-${e.status.replace(/\\s/g,'')}">${esc(e.status)}</span>
+              </div>
+              ${e.note ? `<div class="ev-meta" style="margin-top:4px;">📝 ${esc(e.note)}</div>` : ''}
+            </div>
+            <div class="ev-actions">
+              ${e.filePath ? `<button class="btn btn-ghost btn-sm" onclick="previewEvidence('${e.id}')">👁️</button>`:''}
+              <button class="btn btn-ghost btn-sm" onclick="openEditEvidence('${e.id}')">${I.edit}</button>
+              <button class="btn btn-ghost btn-sm" onclick="deleteEvidence('${e.id}')" style="color:var(--danger)">${I.trash}</button>
+            </div>
+          </div>`;
+        }).join('')
+      }
+    </div>
+  `;
+}
+function allTopicTitle(topicId, tahun){
+  for(const y in DB.topics){ const f = (DB.topics[y]||[]).find(t=>t.id===topicId); if(f) return f.title; }
+  return '(Tajuk tidak dijumpai)';
+}
+
+window.saveOverride = async function(studentId, semester, val){
+  const tp = val===''? null : parseInt(val);
+  let o = DB.overrides.find(x=>x.studentId===studentId && x.semester===semester);
+  if(!o){ o = {studentId, semester, tp}; DB.overrides.push(o); } else { o.tp = tp; }
+  await persist(['overrides']);
+  toast('TP muktamad dikemaskini.');
+  navigate('studentWorkspace',{studentId});
+};
+window.saveNote = async function(studentId, semester){
+  const text = document.getElementById('noteArea').value;
+  let n = DB.notes.find(x=>x.studentId===studentId && x.semester===semester);
+  if(!n){ n = {studentId, semester, text}; DB.notes.push(n); } else { n.text = text; }
+  await persist(['notes']);
+  toast('Catatan disimpan.');
+};
+
+/* ---- Evidence CRUD ---- */
+window.openAddEvidence = function(studentId, semester){
+  ui.editingEvId = null; ui.pendingFileObj = null;
+  const s = DB.students.find(x=>x.id===studentId);
+  const tahun = tahunOfKelas(s.kelas);
+  const topics = DB.topics[tahun] || [];
+  const today = new Date().toISOString().slice(0,10);
+  openModal(evidenceFormHTML({topics, date:today}), true);
+  document.getElementById('evForm').dataset.studentId = studentId;
+  document.getElementById('evForm').dataset.semester = semester;
+};
+window.openEditEvidence = function(evId){
+  const e = DB.evidence.find(x=>x.id===evId);
+  if(!e) return;
+  ui.editingEvId = evId; ui.pendingFileObj = null;
+  const s = DB.students.find(x=>x.id===e.studentId);
+  const tahun = tahunOfKelas(s.kelas);
+  const topics = DB.topics[tahun] || [];
+  openModal(evidenceFormHTML({topics, date:e.date, ev:e}), true);
+  document.getElementById('evForm').dataset.studentId = e.studentId;
+  document.getElementById('evForm').dataset.semester = e.semester;
+};
+function evidenceFormHTML(o){
+  const topics = o.topics, ev = o.ev;
+  return `
+    <h3 class="modal-title">${ev? 'Kemaskini Eviden' : 'Tambah Eviden'}</h3>
+    <p class="modal-sub">Lengkapkan maklumat eviden murid.</p>
+    <div id="evForm">
+      <div class="field"><label>Tajuk Eviden</label>
+        <select id="evTopic">
+          ${topics.map(t=>`<option value="${t.id}" ${ev&&ev.topicId===t.id?'selected':''}>${esc(t.title)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="grid grid-2">
+        <div class="field"><label>Tarikh</label><input type="date" id="evDate" value="${esc(ev?ev.date:o.date)}"></div>
+        <div class="field"><label>Status Eviden</label>
+          <select id="evStatus">${STATUS_LIST.map(st=>`<option ${ev&&ev.status===st?'selected':''}>${st}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="field"><label>Tahap Eviden (Penilaian Guru)</label>
+        <select id="evTahap">${TAHAP_LIST.map(t=>`<option value="${t.v}" ${ev&&ev.tahap===t.v?'selected':''}>${t.l}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Fail Eviden (JPG / PNG / PDF, maks 4MB)</label>
+        <input type="file" id="evFile" accept=".jpg,.jpeg,.png,.pdf" onchange="handleFileSelect(this)">
+        <div id="evFileInfo" style="font-size:11.5px; color:var(--muted); margin-top:5px;">${ev&&ev.fileName? '📎 '+esc(ev.fileName)+' (fail sedia ada — pilih fail baharu untuk gantikan)' : 'Belum ada fail dipilih.'}</div>
+      </div>
+      <div class="field"><label>Catatan Eviden (pilihan)</label>
+        <textarea id="evNote" rows="2" style="width:100%; padding:11px 13px; border:1.5px solid var(--border); border-radius:10px;">${ev?esc(ev.note||''):''}</textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" onclick="saveEvidence()">${I.plus} ${ev?'Simpan Perubahan':'Tambah Eviden'}</button>
+    </div>
+  `;
+}
+window.handleFileSelect = function(input){
+  const f = input.files[0];
+  if(!f) return;
+  if(f.size > 8*1024*1024){ toast('Saiz fail melebihi 8MB.', true); input.value=''; return; }
+  ui.pendingFileObj = f;
+  document.getElementById('evFileInfo').textContent = '📎 '+f.name+' (siap dipilih, akan dimuat naik semasa simpan)';
+};
+window.saveEvidence = async function(){
+  const form = document.getElementById('evForm');
+  const studentId = form.dataset.studentId, semester = form.dataset.semester;
+  const topicId = document.getElementById('evTopic').value;
+  const date = document.getElementById('evDate').value;
+  const status = document.getElementById('evStatus').value;
+  const tahap = document.getElementById('evTahap').value;
+  const note = document.getElementById('evNote').value.trim();
+  if(!topicId){ toast('Sila pilih tajuk eviden.', true); return; }
+  if(!date){ toast('Sila pilih tarikh.', true); return; }
+
+  let evId = ui.editingEvId;
+  let filePath = null, fileName = null, fileType = null;
+
+  if(evId){
+    const existing = DB.evidence.find(x=>x.id===evId);
+    filePath = existing.filePath; fileName = existing.fileName; fileType = existing.fileType;
+  }
+  if(ui.pendingFileObj){
+    const f = ui.pendingFileObj;
+    const objectPath = (evId||uid()) + '-' + Date.now() + '-' + f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const { error: upErr } = await supabase.storage.from(EVIDENCE_BUCKET).upload(objectPath, f, { upsert:true });
+    if(upErr){ toast('Gagal memuat naik fail: '+upErr.message, true); return; }
+    const { data: pub } = supabase.storage.from(EVIDENCE_BUCKET).getPublicUrl(objectPath);
+    filePath = pub.publicUrl; fileName = f.name; fileType = f.type;
+  }
+
+  if(evId){
+    const existing = DB.evidence.find(x=>x.id===evId);
+    Object.assign(existing, {topicId, date, status, tahap, note, filePath, fileName, fileType});
+  } else {
+    evId = uid();
+    DB.evidence.push({id:evId, studentId, semester, topicId, date, status, tahap, note, filePath, fileName, fileType});
+  }
+  await persist(['evidence']);
+  toast('Eviden disimpan.');
+  closeModal();
+  navigate('studentWorkspace',{studentId});
+};
+window.deleteEvidence = function(evId){
+  showConfirm('Buang eviden ini?', async ()=>{
+    const e = DB.evidence.find(x=>x.id===evId);
+    const studentId = e.studentId;
+    DB.evidence = DB.evidence.filter(x=>x.id!==evId);
+    await persist(['evidence']);
+    toast('Eviden dibuang.');
+    navigate('studentWorkspace',{studentId});
+  });
+};
+window.previewEvidence = function(evId){
+  const e = DB.evidence.find(x=>x.id===evId);
+  if(!e || !e.filePath) return;
+  if(e.fileType && e.fileType.startsWith('image')){
+    openModal(`<h3 class="modal-title">${esc(e.fileName)}</h3><img src="${e.filePath}" style="width:100%; border-radius:10px; margin-top:8px;"><div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">Tutup</button></div>`, true);
+  } else {
+    openModal(`<h3 class="modal-title">${esc(e.fileName)}</h3><iframe src="${e.filePath}" style="width:100%; height:70vh; border:1px solid var(--border); border-radius:10px; margin-top:8px;"></iframe><div class="modal-foot"><a class="btn btn-outline" href="${e.filePath}" target="_blank" download="${esc(e.fileName)}">Muat Turun</a><button class="btn btn-primary" onclick="closeModal()">Tutup</button></div>`, true);
+  }
+};
+
+/* ================= ANALISIS TP ================= */
+function renderAnalisis(){
+  const sem = ui.analysisSemester;
+  const kelasStats = DB.classes.map(k=>{
+    const studs = DB.students.filter(s=>s.kelas===k);
+    const dist=[0,0,0,0,0,0,0];
+    studs.forEach(s=> dist[finalTP(s.id,sem)]++);
+    const withTP = studs.map(s=>finalTP(s.id,sem)).filter(t=>t>0);
+    const avg = withTP.length? withTP.reduce((a,b)=>a+b,0)/withTP.length : 0;
+    return {kelas:k, n:studs.length, dist, avg};
+  });
+
+  return `
+    <div class="toolbar">
+      <div class="seg">${SEMS.map(s=>`<button class="${sem===s?'active':''}" onclick="ui.analysisSemester='${s}'; navigate('analisis')">${s}</button>`).join('')}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-head"><div><p class="card-title">Perbandingan Purata TP Antara Kelas</p><p class="card-sub">${esc(sem)} · skala TP1–TP6</p></div></div>
+      ${kelasStats.filter(k=>k.n>0).length===0 ? emptyState('Tiada data','Tambah murid dahulu.') :
+        kelasStats.filter(k=>k.n>0).slice().sort((a,b)=>b.avg-a.avg).map(k=>`
+          <div class="hbar-group">
+            <div class="hbar-name">${esc(k.kelas)} <span class="text-muted" style="font-weight:500;">(${k.n})</span></div>
+            <div class="hbar-track"><div class="hbar-fill" style="width:${(k.avg/6*100)}%;"></div><div class="hbar-num">${k.avg?k.avg.toFixed(2):'-'}</div></div>
+          </div>
+        `).join('')
+      }
+    </div>
+
+    <div class="grid grid-2">
+      ${kelasStats.filter(k=>k.n>0).map(k=>`
+        <div class="card">
+          <div class="card-head"><div><p class="card-title">${esc(k.kelas)}</p><p class="card-sub">${k.n} murid · purata ${k.avg?k.avg.toFixed(2):'-'}</p></div></div>
+          ${[0,1,2,3,4,5,6].map(t=>{
+            const max = Math.max(...k.dist,1);
+            return `<div class="bar-row">
+              <div class="bar-label">${TP_LABEL[t]}</div>
+              <div class="bar-track"><div class="bar-fill" style="width:${(k.dist[t]/max*100)}%; background:${TP_COLOR_HEX[t]};"></div></div>
+              <div class="bar-val">${k.dist[t]}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+/* ================= AKAUN GURU (admin) ================= */
+window.openAddGuru = function(){
+  openModal(`
+    <h3 class="modal-title">Tambah Akaun Guru</h3>
+    <div class="field"><label>Nama Penuh</label><input type="text" id="gNama"></div>
+    <div class="field"><label>Nama Pengguna</label><input type="text" id="gUser"></div>
+    <div class="field"><label>Kata Laluan</label><input type="text" id="gPass"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" onclick="saveGuru()">${I.plus} Tambah</button>
+    </div>
+  `);
+};
+window.saveGuru = async function(){
+  const name = document.getElementById('gNama').value.trim();
+  const username = document.getElementById('gUser').value.trim();
+  const password = document.getElementById('gPass').value;
+  if(!name || !username || !password){ toast('Sila lengkapkan semua medan.', true); return; }
+  if(DB.users.find(u=>u.username.toLowerCase()===username.toLowerCase())){ toast('Nama pengguna sudah wujud.', true); return; }
+  DB.users.push({id:uid(), name, username, password, role:'guru'});
+  await persist(['users']);
+  toast('Akaun guru ditambah.');
+  closeModal();
+  navigate('akaun');
+};
+window.deleteGuru = function(id, name){
+  showConfirm('Buang akaun "'+name+'"?', async ()=>{
+    DB.users = DB.users.filter(u=>u.id!==id);
+    await persist(['users']);
+    toast('Akaun dibuang.');
+    navigate('akaun');
+  });
+};
+function renderAkaun(){
+  return `
+    <div class="toolbar"><button class="btn btn-primary btn-sm" onclick="openAddGuru()">${I.plus} Tambah Akaun Guru</button></div>
+    <div class="card">
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nama</th><th>Nama Pengguna</th><th>Peranan</th><th style="width:70px;"></th></tr></thead>
+      <tbody>
+      ${DB.users.map(u=>`<tr>
+        <td>${esc(u.name)}</td><td class="mono">${esc(u.username)}</td>
+        <td><span class="chip ${u.role==='admin'?'chip-tahap-tinggi':'chip-kelas'}">${u.role==='admin'?'Admin':'Guru'}</span></td>
+        <td>${u.role!=='admin'? `<button class="btn btn-ghost btn-sm" onclick="deleteGuru('${u.id}','${esc(u.name).replace(/'/g,'')}')" style="color:var(--danger)">${I.trash}</button>`:''}</td>
+      </tr>`).join('')}
+      </tbody></table></div>
+    </div>
+  `;
+}
+
+/* ================= DESCRIPTOR MODAL ================= */
+window.openDescModal = function(){
+  openModal(`
+    <h3 class="modal-title">Rujukan Deskriptor TP</h3>
+    <p class="modal-sub">Panduan tafsiran Tahap Penguasaan Pendidikan Islam.</p>
+    ${[1,2,3,4,5,6].map(t=>`
+      <div class="desc-row">
+        <div class="desc-tp" style="background:${TP_COLOR_HEX[t]}">TP${t}</div>
+        <div class="desc-text">${esc(TP_DESC[t])}</div>
+      </div>
+    `).join('')}
+    <div class="modal-foot"><button class="btn btn-primary" onclick="closeModal()">Faham</button></div>
+  `, true);
+};
+
+/* ================= MODAL / CONFIRM ================= */
+window.openModal = function(html, wide){
+  document.getElementById('modalBox').className = 'modal-box' + (wide?' wide':'');
+  document.getElementById('modalBox').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('active');
+};
+window.closeModal = function(){ document.getElementById('modalOverlay').classList.remove('active'); };
+document.getElementById('modalOverlay').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+
+window.showConfirm = function(msg, onYes){
+  openModal(`
+    <h3 class="modal-title">Sahkan Tindakan</h3>
+    <p class="modal-sub" style="margin-bottom:4px;">${esc(msg)}</p>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal()">Batal</button>
+      <button class="btn btn-danger" id="confirmYesBtn">${I.trash} Sahkan</button>
+    </div>
+  `);
+  document.getElementById('confirmYesBtn').onclick = async function(){ closeModal(); await onYes(); };
+};
+
+/* ================= PRINT LAPORAN ================= */
+window.printLaporan = async function(studentId){
+  const s = DB.students.find(x=>x.id===studentId);
+  const tahun = tahunOfKelas(s.kelas);
+  let html = `<div class="rpt-page">
+    <div class="rpt-head">
+      <div class="rpt-emblem"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#fff"/></svg></div>
+      <div>
+        <h2>LAPORAN PENTAKSIRAN BILIK DARJAH (PBD)</h2>
+        <p>Mata Pelajaran Pendidikan Islam · Kementerian Pendidikan Malaysia</p>
+      </div>
+    </div>
+    <div class="rpt-grid">
+      <div><b>Nama Murid:</b> ${esc(s.name)}</div>
+      <div><b>Kelas:</b> ${esc(s.kelas)}</div>
+      <div><b>Tahun:</b> ${esc(tahun)}</div>
+      <div><b>Tarikh Cetak:</b> ${new Date().toLocaleDateString('ms-MY')}</div>
+    </div>`;
+
+  SEMS.forEach(sem=>{
+    const evs = evidencesFor(s.id, sem);
+    const auto = computeAutoTP(evs);
+    const ov = overrideFor(s.id, sem);
+    const fin = ov!=null?ov:auto;
+    const note = noteFor(s.id, sem);
+    html += `<div class="rpt-sec-title">${esc(sem)}</div>
+      <div class="rpt-tp-box">
+        <div style="text-align:center;"><div style="font-size:10px;color:#62706A;">TP AUTOMATIK</div><div style="font-size:20px;font-weight:800;color:#093D2C;">${TP_LABEL[auto]}</div></div>
+        <div style="text-align:center;"><div style="font-size:10px;color:#62706A;">TP MUKTAMAD</div><div style="font-size:20px;font-weight:800;color:#B8902E;">${TP_LABEL[fin]}</div></div>
+        <div style="flex:1; font-size:11px; color:#62706A;">${esc(TP_DESC[fin] || 'Belum mencukupi eviden untuk penjanaan TP.')}</div>
+      </div>
+      <div style="font-size:11.5px; font-weight:700; color:#093D2C; margin-bottom:4px;">Senarai Eviden (${evs.length})</div>
+      ${evs.length===0? '<div style="font-size:11.5px;color:#62706A;">Tiada eviden direkodkan.</div>' :
+        evs.map(e=>`<div class="rpt-ev-item"><span>${esc(allTopicTitle(e.topicId,tahun))}</span><span>${esc(e.date)} · ${TAHAP_LIST.find(t=>t.v===e.tahap).l} · ${esc(e.status)}</span></div>`).join('')
+      }
+      ${note? `<div class="rpt-note"><b>Catatan Guru:</b> ${esc(note)}</div>` : ''}
+    `;
+  });
+
+  html += `<div class="rpt-foot">
+      <div class="rpt-sig">Tandatangan Guru Pendidikan Islam</div>
+      <div class="rpt-sig">Tandatangan Ketua Panitia</div>
+    </div>
+    <p style="font-size:9.5px;color:#9AA39C;margin-top:18px;">*Ruang ini disediakan untuk lampiran logo rasmi sekolah/KPM semasa cetakan fizikal.</p>
+  </div>`;
+
+  document.getElementById('printReport').innerHTML = html;
+  setTimeout(()=> window.print(), 100);
+};
+
+/* ================= INIT ================= */
+(async function init(){
+  if(!isConfigured || !supabase){
+    document.getElementById('loginScreen').innerHTML = `
+      <div class="login-card" style="max-width:480px;">
+        <div class="login-badge" style="background:var(--danger);">${I.info}</div>
+        <div class="login-eyebrow" style="color:var(--danger);">Konfigurasi Diperlukan</div>
+        <h1 class="login-title">Supabase Belum Disambung</h1>
+        <p class="login-sub">Buka fail ini dalam editor teks, cari <b class="mono">SUPABASE_URL</b> dan <b class="mono">SUPABASE_ANON_KEY</b> berhampiran permulaan tag &lt;script&gt;, dan gantikan dengan nilai daripada Supabase Dashboard &gt; Project Settings &gt; API. Rujuk panduan SETUP.md yang disertakan.</p>
+      </div>`;
+    return;
+  }
+  await loadDB();
+  window.__dbReady = true;
+})();
+
+})();
+</script>
+
+</body>
+</html>
