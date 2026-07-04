@@ -453,7 +453,7 @@ const I = {
   search:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.4" y2="16.4"/></svg>',
   star:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18 21 L12 16.5 L6 21 L8 13.5 L2 9 L9.5 9 Z"/></svg>',
   info:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-  steps:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h4v-4H3v4Z"/><path d="M9 20h4v-9H9v9Z"/><path d="M15 20h4V6h-4v14Z"/></svg>'
+  steps:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.5 8 12 12.5 21.5 8 12 3.5Z"/><path d="M6.5 10.3V15c0 1.66 2.46 3 5.5 3s5.5-1.34 5.5-3v-4.7"/><path d="M21.5 8v6.2"/></svg>'
 };
 
 /* ================= CONSTANTS ================= */
@@ -579,7 +579,8 @@ async function loadDB(){
         {id:uid(), title:"Adab Berjiran"},
         {id:uid(), title:"Nifak"},
         {id:uid(), title:"Adab Berguru"}
-      ]
+      ],
+      '6':[]
     };
     seeded = true;
   }
@@ -738,11 +739,8 @@ function renderDashboard(){
   const topKelas = kelasStats.slice().sort((a,b)=>b.avg-a.avg)[0];
 
   return `
-    <div class="toolbar" style="align-items:center;">
-      <div class="seg">
-        ${SEMS.map(s=>`<button class="${ui.analysisSemester===s?'active':''}" onclick="ui.analysisSemester='${s}'; navigate('dashboard')">${s}</button>`).join('')}
-      </div>
-      <span class="text-muted" style="font-size:11.5px;">${esc(SEM_RANGES[sem]||'')}</span>
+    <div style="margin-bottom:14px;">
+      <span class="chip chip-kelas">${esc(sem)} · ${esc(SEM_RANGES[sem]||'')}</span>
     </div>
     <div class="grid grid-4" style="margin-bottom:18px;">
       <div class="stat-card">
@@ -1279,8 +1277,9 @@ function renderAkaun(){
 function renderDeskriptor(){
   return `
     <div class="card" style="margin-bottom:18px; background:linear-gradient(135deg, var(--primary-light), #fff);">
-      <p class="card-title" style="margin-bottom:4px;">Tahap Penguasaan (TP) PBD Pendidikan Islam Sekolah Rendah</p>
-      <p class="card-sub">Kriteria pentaksiran berasaskan Dokumen Standard Kurikulum dan Pentaksiran (DSKP)</p>
+      <p class="card-title" style="margin-bottom:2px; font-size:16px;">PBD Pendidikan Islam</p>
+      <p class="card-title" style="margin-bottom:8px; font-size:16px;">Sekolah Rendah</p>
+      <p class="card-sub" style="margin:0;">Kriteria pentaksiran berasaskan Dokumen Standard Kurikulum dan Pentaksiran (DSKP)</p>
     </div>
     <div class="grid grid-2">
       ${[1,2,3,4,5,6].map(t=>{
@@ -1300,7 +1299,10 @@ function renderDeskriptor(){
         </div>`;
       }).join('')}
     </div>
-    <p class="text-muted" style="font-size:11px; margin-top:16px;">Pentaksiran dilakukan secara berterusan melalui pemerhatian, lisan dan penulisan. Rujuk DSKP untuk perincian lengkap. Sumber: Kementerian Pendidikan Malaysia.</p>
+    <div class="text-muted" style="font-size:11px; margin-top:16px; line-height:1.6;">
+      <p style="margin:0 0 8px;">Pentaksiran dilakukan secara berterusan melalui pemerhatian, lisan dan penulisan. Rujuk DSKP untuk perincian lengkap.</p>
+      <p style="margin:0;">Sumber:<br>Kementerian Pendidikan Malaysia.</p>
+    </div>
   `;
 }
 
