@@ -764,6 +764,32 @@ function renderDashboard(){
   const topKelas = kelasStats.slice().sort((a,b)=>b.avg-a.avg)[0];
   const needsAttention = activeStudents.filter(s=> finalTP(s.id, sem)===0).slice(0,8);
 
+  // Statistik jantina
+  const genderCounts = {L:0, P:0};
+  activeStudents.forEach(s=>{ const g=inferGender(s.name); if(g==='L') genderCounts.L++; else if(g==='P') genderCounts.P++; });
+  const genderTotal = genderCounts.L + genderCounts.P;
+  const pctL = genderTotal ? (genderCounts.L/genderTotal*100) : 0;
+  const pctP = 100 - pctL;
+
+  // Taburan TP ikut jantina (TP1-TP6)
+  const genderByTP = [1,2,3,4,5,6].map(t=>{
+    let L=0, P=0;
+    activeStudents.forEach(s=>{ if(finalTP(s.id, sem)===t){ const g=inferGender(s.name); if(g==='L') L++; else if(g==='P') P++; } });
+    return {tp:t, L, P, total:L+P};
+  });
+  const maxGenderTP = Math.max(...genderByTP.map(x=>x.total), 1);
+
+  // Jadual TP terperinci ikut kelas
+  const kelasTPTable = DB.classes.map(k=>{
+    const studs = activeStudents.filter(s=>s.kelas===k);
+    const row = {kelas:k, n:studs.length, tp:[0,0,0,0,0,0,0]};
+    studs.forEach(s=>{ row.tp[finalTP(s.id, sem)]++; });
+    return row;
+  }).filter(r=>r.n>0);
+  const grandTP = [0,0,0,0,0,0,0];
+  kelasTPTable.forEach(r=> r.tp.forEach((v,i)=> grandTP[i]+=v));
+  const grandN = kelasTPTable.reduce((a,r)=>a+r.n,0);
+
   return `
     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
       <span class="chip chip-kelas">${esc(sem)} · ${esc(SEM_RANGES[sem]||'')}</span>
@@ -833,6 +859,70 @@ function renderDashboard(){
             </div>`
           }
         </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="align-items:start; margin-top:16px;">
+      <div class="card" style="text-align:center;">
+        <div class="card-head" style="justify-content:center;"><div><p class="card-title">Statistik Murid — Jantina</p><p class="card-sub">Murid aktif keseluruhan</p></div></div>
+        <div style="width:170px; height:170px; border-radius:50%; margin:8px auto 14px; background:conic-gradient(#2B6CA8 0% ${pctL}%, #D6558C ${pctL}% 100%); display:flex; align-items:center; justify-content:center;">
+          <div style="width:112px; height:112px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <div style="font-size:26px; font-weight:800; color:var(--primary-dark); font-family:'JetBrains Mono',monospace;">${genderTotal}</div>
+            <div style="font-size:10px; color:var(--muted);">Jumlah Murid</div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:center; gap:20px; font-size:12.5px;">
+          <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#D6558C; margin-right:5px;"></span>🧕🏻 Perempuan: <b>${genderCounts.P}</b> (${pctP.toFixed(0)}%)</div>
+          <div><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#2B6CA8; margin-right:5px;"></span>👦🏻 Lelaki: <b>${genderCounts.L}</b> (${pctL.toFixed(0)}%)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><p class="card-title">Taburan TP Mengikut Jantina</p><p class="card-sub">${esc(sem)} · P = Perempuan, L = Lelaki</p></div></div>
+        <div style="display:flex; align-items:flex-end; gap:10px; height:140px; padding:0 4px;">
+          ${genderByTP.map(g=>{
+            const h = 110;
+            const hL = g.total ? (g.L/maxGenderTP*h) : 0;
+            const hP = g.total ? (g.P/maxGenderTP*h) : 0;
+            return `<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:${h}px;">
+              ${g.P>0?`<div style="width:100%; background:#D6558C; border-radius:4px 4px 0 0; height:${hP}px; display:flex; align-items:flex-start; justify-content:center; color:#fff; font-size:10px; font-weight:700; padding-top:2px;">${g.P}</div>`:''}
+              ${g.L>0?`<div style="width:100%; background:#2B6CA8; border-radius:${g.P>0?'0':'4px 4px'} 0 0; height:${hL}px; display:flex; align-items:flex-start; justify-content:center; color:#fff; font-size:10px; font-weight:700; padding-top:2px;">${g.L}</div>`:''}
+              ${g.total===0?`<div style="width:100%; background:var(--surface-alt); height:3px; border-radius:2px;"></div>`:''}
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex; gap:10px; padding:0 4px; margin-top:6px;">
+          ${genderByTP.map(g=>`<div style="flex:1; text-align:center; font-size:11px; font-weight:700; color:var(--muted);">TP${g.tp}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-head"><div><p class="card-title">Taburan TP Terperinci Mengikut Kelas</p><p class="card-sub">${esc(sem)} · bilangan murid aktif setiap TP</p></div></div>
+      <div class="tbl-wrap">
+        <table class="tbl" style="min-width:640px;">
+          <thead>
+            <tr style="background:var(--primary-dark);">
+              <th style="color:#fff; border-bottom:none;">Kelas</th>
+              <th style="color:#fff; border-bottom:none; text-align:center;">Bil.</th>
+              ${[1,2,3,4,5,6].map(t=>`<th style="color:#fff; border-bottom:none; text-align:center;">TP${t}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${kelasTPTable.length===0 ? `<tr><td colspan="8" style="text-align:center; padding:20px;">${emptyState('Tiada data','Tambah murid untuk lihat taburan.')}</td></tr>` :
+              kelasTPTable.map(r=>`<tr>
+                <td style="font-weight:700; cursor:pointer;" onclick="selectFilterKelas('${esc(r.kelas)}','rekod')">${esc(r.kelas)}</td>
+                <td style="text-align:center;">${r.n}</td>
+                ${[1,2,3,4,5,6].map(t=>`<td style="text-align:center; background:${r.tp[t]>0?TP_COLOR_HEX[t]+'33':'transparent'}; font-weight:${r.tp[t]>0?'700':'400'};">${r.tp[t]}</td>`).join('')}
+              </tr>`).join('')
+            }
+          </tbody>
+          ${kelasTPTable.length>0 ? `<tfoot><tr style="background:var(--surface-alt); font-weight:800;">
+              <td>Jumlah Keseluruhan</td>
+              <td style="text-align:center;">${grandN}</td>
+              ${[1,2,3,4,5,6].map(t=>`<td style="text-align:center;">${grandTP[t]}</td>`).join('')}
+            </tr></tfoot>` : ''}
+        </table>
       </div>
     </div>
   `;
