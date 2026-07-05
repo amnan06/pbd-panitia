@@ -864,43 +864,56 @@ window.deleteMurid = function(id, name){
   });
 };
 
-/* ================= PENAPIS TAHUN/KELAS (DIKONGSI) ================= */
-function tahunOptions(){
-  const set = new Set(DB.classes.map(tahunOfKelas));
-  return ['Semua', ...Array.from(set).sort((a,b)=>Number(a)-Number(b))];
-}
-function kelasOptionsForTahun(tahun){
-  const base = tahun==='Semua' ? DB.classes : DB.classes.filter(k=>tahunOfKelas(k)===tahun);
-  return ['Semua', ...base];
-}
+/* ================= PENAPIS KELAS (MODAL PILIH KELAS) ================= */
 function filteredStudents(){
   let list = DB.students;
-  if(ui.filterTahun && ui.filterTahun!=='Semua') list = list.filter(s=>tahunOfKelas(s.kelas)===ui.filterTahun);
   if(ui.kelasFilter && ui.kelasFilter!=='Semua') list = list.filter(s=>s.kelas===ui.kelasFilter);
   if(ui.searchMurid) list = list.filter(s=> s.name.toLowerCase().includes(ui.searchMurid.toLowerCase()));
   return list;
 }
-window.selectFilterTahun = function(t, view){
-  ui.filterTahun = t;
-  ui.kelasFilter = 'Semua';
-  navigate(view);
-};
 window.selectFilterKelas = function(k, view){
   ui.kelasFilter = k;
+  closeModal();
   navigate(view);
 };
-function filterBarHTML(view, allowDeleteKelas){
-  const tOpts = tahunOptions();
-  const kOpts = kelasOptionsForTahun(ui.filterTahun);
-  return `
-    <div class="class-tabs">
-      ${tOpts.map(t=> `<div class="class-tab ${ui.filterTahun===t?'active':''}" onclick="selectFilterTahun('${esc(t)}','${view}')">${t==='Semua'?'Semua Tahun':'Tahun '+esc(t)}</div>`).join('')}
+window.openKelasPicker = function(view, allowDeleteKelas){
+  const opts = ['Semua', ...DB.classes];
+  openModal(`
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <h3 class="modal-title" style="margin:0;">📚 Pilih Kelas</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">${I.x}</button>
     </div>
-    <div class="class-tabs">
-      ${kOpts.map(k=> `<div class="class-tab ${ui.kelasFilter===k?'active':''}" onclick="selectFilterKelas('${esc(k)}','${view}')">${esc(k)}${(allowDeleteKelas && k!=='Semua')?` <span style="opacity:.6" onclick="event.stopPropagation(); deleteKelas('${esc(k)}')">✕</span>`:''}</div>`).join('')}
+    <div class="grid grid-2" style="gap:10px; margin-bottom:16px;">
+      ${opts.map(k=>{
+        const active = ui.kelasFilter===k;
+        return `<div style="position:relative;">
+          <button onclick="selectFilterKelas('${esc(k)}','${view}')" style="width:100%; padding:14px 10px; border-radius:12px; border:2px solid ${active?'var(--primary)':'var(--border)'}; background:${active?'var(--primary-light)':'#fff'}; color:${active?'var(--primary-dark)':'var(--ink)'}; font-weight:700; font-size:13px; cursor:pointer;">
+            ${k==='Semua'?'📚 Semua Kelas':esc(k)}
+          </button>
+          ${(allowDeleteKelas && k!=='Semua')?`<button onclick="event.stopPropagation(); deleteKelas('${esc(k)}')" style="position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:50%; background:var(--danger); color:#fff; border:2px solid #fff; font-size:12px; line-height:1; cursor:pointer;">✕</button>`:''}
+        </div>`;
+      }).join('')}
     </div>
-  `;
-}
+    ${allowDeleteKelas ? `
+    <div style="border-top:1px solid var(--border); padding-top:14px;">
+      <div style="font-weight:700; font-size:13px; color:var(--primary-dark); margin-bottom:8px; display:flex; align-items:center; gap:6px;">${I.plus} Tambah Kelas Baharu</div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="inlineKelasInput" placeholder="cth: Tahun 5A/5B" style="flex:1; padding:11px 13px; border:1.5px solid var(--border); border-radius:10px;">
+        <button class="btn btn-primary" onclick="addKelasInline('${view}')">Tambah</button>
+      </div>
+    </div>` : ''}
+  `, true);
+};
+window.addKelasInline = async function(view){
+  const input = document.getElementById('inlineKelasInput');
+  let name = input.value.replace(/['"]/g,'').trim();
+  if(!name){ toast('Sila masukkan nama kelas.', true); return; }
+  if(DB.classes.includes(name)){ toast('Kelas sudah wujud.', true); return; }
+  DB.classes.push(name);
+  await persist(['classes']);
+  toast('Kelas "'+name+'" ditambah.');
+  openKelasPicker(view, true);
+};
 
 /* ================= REKOD (UPLOAD EVIDEN & TP) ================= */
 function renderRekod(){
@@ -908,8 +921,8 @@ function renderRekod(){
   return `
     <div class="toolbar">
       <div class="search-box">${I.search}<input type="text" placeholder="Cari nama murid..." value="${esc(ui.searchMurid)}" oninput="ui.searchMurid=this.value; renderInto('rekod')" style="width:220px;"></div>
+      <button class="btn btn-outline btn-sm" onclick="openKelasPicker('rekod', false)">📚 ${ui.kelasFilter==='Semua'?'Semua Kelas':esc(ui.kelasFilter)}</button>
     </div>
-    ${filterBarHTML('rekod', false)}
     <div class="card">
       ${studs.length===0 ? emptyState('Tiada murid', 'Sila tambah murid dahulu di tab Murid & Kelas.') :
         studs.map(s=>{
@@ -936,10 +949,9 @@ function renderMurid(){
   return `
     <div class="toolbar">
       <div class="search-box">${I.search}<input type="text" placeholder="Cari nama murid..." value="${esc(ui.searchMurid)}" oninput="ui.searchMurid=this.value; renderInto('murid')" style="width:220px;"></div>
-      <button class="btn btn-outline btn-sm" onclick="addKelas()">${I.plus} Tambah Kelas</button>
+      <button class="btn btn-outline btn-sm" onclick="openKelasPicker('murid', true)">📚 ${ui.kelasFilter==='Semua'?'Semua Kelas':esc(ui.kelasFilter)}</button>
       <button class="btn btn-primary btn-sm" onclick="openAddMurid()">${I.plus} Tambah Murid</button>
     </div>
-    ${filterBarHTML('murid', true)}
     <div class="card">
       ${studs.length===0 ? emptyState('Tiada murid', 'Tambah murid menggunakan butang di atas.') :
         studs.map(s=>{
