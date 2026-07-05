@@ -453,7 +453,8 @@ const I = {
   search:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.4" y2="16.4"/></svg>',
   star:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18 21 L12 16.5 L6 21 L8 13.5 L2 9 L9.5 9 Z"/></svg>',
   info:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-  steps:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.5 8 12 12.5 21.5 8 12 3.5Z"/><path d="M6.5 10.3V15c0 1.66 2.46 3 5.5 3s5.5-1.34 5.5-3v-4.7"/><path d="M21.5 8v6.2"/></svg>'
+  steps:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.5 8 12 12.5 21.5 8 12 3.5Z"/><path d="M6.5 10.3V15c0 1.66 2.46 3 5.5 3s5.5-1.34 5.5-3v-4.7"/><path d="M21.5 8v6.2"/></svg>',
+  rekod:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 12.5l2 2 4-4.5"/></svg>'
 };
 
 /* ================= CONSTANTS ================= */
@@ -486,7 +487,7 @@ function defaultSemester(){
   const cutoff = new Date(now.getFullYear(), 6, 1); // 1 Julai
   return now >= cutoff ? 'Penggal 2' : 'Penggal 1';
 }
-let ui = { view:'dashboard', kelasFilter:'Semua', studentId:null, semester:defaultSemester(), analysisSemester:defaultSemester(), searchMurid:'', tajukTahun:'3', editingEvId:null, pendingFileObj:null };
+let ui = { view:'dashboard', kelasFilter:'Semua', filterTahun:'Semua', studentId:null, semester:defaultSemester(), analysisSemester:defaultSemester(), searchMurid:'', tajukTahun:'3', editingEvId:null, pendingFileObj:null };
 
 function uid(){
   if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -642,6 +643,7 @@ window.doLogout = function(){
 function buildNav(){
   const items = [
     {v:'dashboard', l:'Dashboard', i:I.dashboard},
+    {v:'rekod', l:'Rekod', i:I.rekod},
     {v:'murid', l:'Murid & Kelas', i:I.users},
     {v:'tajuk', l:'Tajuk Eviden', i:I.book},
     {v:'analisis', l:'Analisis TP', i:I.chart},
@@ -655,7 +657,8 @@ function buildNav(){
 
 const TITLES = {
   dashboard:['Dashboard','Ringkasan prestasi keseluruhan panitia'],
-  murid:['Murid & Kelas','Urus senarai kelas dan murid'],
+  rekod:['Rekod','Muat naik eviden & lihat TP setiap murid'],
+  murid:['Murid & Kelas','Tambah/buang kelas dan murid'],
   tajuk:['Tajuk Eviden','Senarai tajuk mengikut tahun'],
   analisis:['Analisis TP','Taburan, purata dan perbandingan kelas'],
   deskriptor:['Deskriptor TP','Panduan tafsiran Tahap Penguasaan Pendidikan Islam'],
@@ -684,6 +687,7 @@ window.navigate = function(view, params){
   const c = document.getElementById('content');
   try{
     if(view==='dashboard') c.innerHTML = renderDashboard();
+    else if(view==='rekod') c.innerHTML = renderRekod();
     else if(view==='murid') c.innerHTML = renderMurid();
     else if(view==='tajuk') c.innerHTML = renderTajuk();
     else if(view==='analisis') c.innerHTML = renderAnalisis();
@@ -860,33 +864,91 @@ window.deleteMurid = function(id, name){
   });
 };
 
-function renderMurid(){
-  const kelasList = ['Semua', ...DB.classes];
-  let studs = DB.students.filter(s=> ui.kelasFilter==='Semua' || s.kelas===ui.kelasFilter);
-  if(ui.searchMurid) studs = studs.filter(s=> s.name.toLowerCase().includes(ui.searchMurid.toLowerCase()));
+/* ================= PENAPIS TAHUN/KELAS (DIKONGSI) ================= */
+function tahunOptions(){
+  const set = new Set(DB.classes.map(tahunOfKelas));
+  return ['Semua', ...Array.from(set).sort((a,b)=>Number(a)-Number(b))];
+}
+function kelasOptionsForTahun(tahun){
+  const base = tahun==='Semua' ? DB.classes : DB.classes.filter(k=>tahunOfKelas(k)===tahun);
+  return ['Semua', ...base];
+}
+function filteredStudents(){
+  let list = DB.students;
+  if(ui.filterTahun && ui.filterTahun!=='Semua') list = list.filter(s=>tahunOfKelas(s.kelas)===ui.filterTahun);
+  if(ui.kelasFilter && ui.kelasFilter!=='Semua') list = list.filter(s=>s.kelas===ui.kelasFilter);
+  if(ui.searchMurid) list = list.filter(s=> s.name.toLowerCase().includes(ui.searchMurid.toLowerCase()));
+  return list;
+}
+window.selectFilterTahun = function(t, view){
+  ui.filterTahun = t;
+  ui.kelasFilter = 'Semua';
+  navigate(view);
+};
+window.selectFilterKelas = function(k, view){
+  ui.kelasFilter = k;
+  navigate(view);
+};
+function filterBarHTML(view, allowDeleteKelas){
+  const tOpts = tahunOptions();
+  const kOpts = kelasOptionsForTahun(ui.filterTahun);
+  return `
+    <div class="class-tabs">
+      ${tOpts.map(t=> `<div class="class-tab ${ui.filterTahun===t?'active':''}" onclick="selectFilterTahun('${esc(t)}','${view}')">${t==='Semua'?'Semua Tahun':'Tahun '+esc(t)}</div>`).join('')}
+    </div>
+    <div class="class-tabs">
+      ${kOpts.map(k=> `<div class="class-tab ${ui.kelasFilter===k?'active':''}" onclick="selectFilterKelas('${esc(k)}','${view}')">${esc(k)}${(allowDeleteKelas && k!=='Semua')?` <span style="opacity:.6" onclick="event.stopPropagation(); deleteKelas('${esc(k)}')">✕</span>`:''}</div>`).join('')}
+    </div>
+  `;
+}
 
+/* ================= REKOD (UPLOAD EVIDEN & TP) ================= */
+function renderRekod(){
+  const studs = filteredStudents();
+  return `
+    <div class="toolbar">
+      <div class="search-box">${I.search}<input type="text" placeholder="Cari nama murid..." value="${esc(ui.searchMurid)}" oninput="ui.searchMurid=this.value; renderInto('rekod')" style="width:220px;"></div>
+    </div>
+    ${filterBarHTML('rekod', false)}
+    <div class="card">
+      ${studs.length===0 ? emptyState('Tiada murid', 'Sila tambah murid dahulu di tab Murid & Kelas.') :
+        studs.map(s=>{
+          const tp1 = finalTP(s.id,'Penggal 1'), tp2 = finalTP(s.id,'Penggal 2');
+          return `<div class="student-row" style="cursor:pointer;" onclick="navigate('studentWorkspace',{studentId:'${s.id}'})">
+            <div class="s-avatar">${esc(s.name.charAt(0).toUpperCase())}</div>
+            <div style="flex:1; min-width:0;">
+              <div class="s-name">${esc(s.name)}</div>
+              <div class="s-meta">${esc(s.kelas)}</div>
+            </div>
+            <span class="tp-chip" style="background:${TP_COLOR[tp1]}" title="TP Penggal 1">${TP_LABEL[tp1]}</span>
+            <span class="tp-chip" style="background:${TP_COLOR[tp2]}" title="TP Penggal 2">${TP_LABEL[tp2]}</span>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); navigate('studentWorkspace',{studentId:'${s.id}'})">${I.edit}</button>
+          </div>`;
+        }).join('')
+      }
+    </div>
+  `;
+}
+
+/* ================= MURID & KELAS (PENGURUSAN SAHAJA) ================= */
+function renderMurid(){
+  const studs = filteredStudents();
   return `
     <div class="toolbar">
       <div class="search-box">${I.search}<input type="text" placeholder="Cari nama murid..." value="${esc(ui.searchMurid)}" oninput="ui.searchMurid=this.value; renderInto('murid')" style="width:220px;"></div>
       <button class="btn btn-outline btn-sm" onclick="addKelas()">${I.plus} Tambah Kelas</button>
       <button class="btn btn-primary btn-sm" onclick="openAddMurid()">${I.plus} Tambah Murid</button>
     </div>
-    <div class="class-tabs">
-      ${kelasList.map(k=> `<div class="class-tab ${ui.kelasFilter===k?'active':''}" onclick="ui.kelasFilter='${esc(k)}'; navigate('murid')">${esc(k)}${k!=='Semua'?` <span style="opacity:.6" onclick="event.stopPropagation(); deleteKelas('${esc(k)}')">✕</span>`:''}</div>`).join('')}
-    </div>
+    ${filterBarHTML('murid', true)}
     <div class="card">
       ${studs.length===0 ? emptyState('Tiada murid', 'Tambah murid menggunakan butang di atas.') :
         studs.map(s=>{
-          const tp1 = finalTP(s.id,'Penggal 1'), tp2 = finalTP(s.id,'Penggal 2');
           return `<div class="student-row">
             <div class="s-avatar">${esc(s.name.charAt(0).toUpperCase())}</div>
-            <div style="flex:1; min-width:0; cursor:pointer;" onclick="navigate('studentWorkspace',{studentId:'${s.id}'})">
+            <div style="flex:1; min-width:0;">
               <div class="s-name">${esc(s.name)}</div>
               <div class="s-meta">${esc(s.kelas)}</div>
             </div>
-            <span class="tp-chip" style="background:${TP_COLOR[tp1]}" title="TP Penggal 1">${TP_LABEL[tp1]}</span>
-            <span class="tp-chip" style="background:${TP_COLOR[tp2]}" title="TP Penggal 2">${TP_LABEL[tp2]}</span>
-            <button class="btn btn-ghost btn-sm" onclick="navigate('studentWorkspace',{studentId:'${s.id}'})">${I.edit}</button>
             <button class="btn btn-ghost btn-sm" onclick="deleteMurid('${s.id}','${esc(s.name).replace(/'/g,"")}')" style="color:var(--danger)">${I.trash}</button>
           </div>`;
         }).join('')
@@ -894,7 +956,10 @@ function renderMurid(){
     </div>
   `;
 }
-window.renderInto = function(view){ document.getElementById('content').innerHTML = view==='murid'?renderMurid():renderTajuk(); };
+window.renderInto = function(view){
+  const map = {murid:renderMurid, rekod:renderRekod, tajuk:renderTajuk};
+  document.getElementById('content').innerHTML = (map[view]||renderMurid)();
+};
 
 /* ================= TAJUK EVIDEN ================= */
 window.addTahunBaharu = async function(){
@@ -963,7 +1028,7 @@ function renderStudentWorkspace(studentId){
   const topics = DB.topics[tahun] || [];
 
   return `
-    <button class="btn btn-ghost btn-sm" style="margin-bottom:12px;" onclick="navigate('murid')">${I.back} Kembali ke Senarai Murid</button>
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:12px;" onclick="navigate('rekod')">${I.back} Kembali ke Rekod</button>
     <div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
       <div style="display:flex; align-items:center; gap:14px;">
         <div class="s-avatar" style="width:52px;height:52px;font-size:18px;">${esc(s.name.charAt(0).toUpperCase())}</div>
