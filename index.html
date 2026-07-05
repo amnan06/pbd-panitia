@@ -531,7 +531,7 @@ async function loadDB(){
   ]);
   const users = (usersR.data||[]).map(u=>({id:u.id, username:u.username, password:u.password, name:u.name, role:u.role}));
   const classes = (classesR.data||[]).map(c=>c.name);
-  const students = (studentsR.data||[]).map(s=>({id:s.id, name:s.name, kelas:s.kelas}));
+  const students = (studentsR.data||[]).map(s=>({id:s.id, name:s.name, kelas:s.kelas, aktif: s.aktif!==false}));
   const topics = {};
   (topicsR.data||[]).forEach(t=>{ if(!topics[t.tahun]) topics[t.tahun]=[]; topics[t.tahun].push({id:t.id, title:t.title}); });
   const evidence = (evidenceR.data||[]).map(e=>({id:e.id, studentId:e.student_id, semester:e.semester, topicId:e.topic_id, date:e.date, status:e.status, tahap:e.tahap, note:e.note, filePath:e.file_path, fileName:e.file_name, fileType:e.file_type}));
@@ -545,7 +545,7 @@ async function loadDB(){
     seeded = true;
   }
   if(DB.classes.length===0){
-    DB.classes = ['Tahun 3A','Tahun 3B','Tahun 3E','Tahun 4A','Tahun 4C','Tahun 4D','Tahun 6B','Tahun 6C'];
+    DB.classes = ['Tahun 3A/3B','Tahun 3E','Tahun 4A/4C','Tahun 4B/4D','Tahun 6B/6C'];
     seeded = true;
   }
   if(!DB.topics || Object.keys(DB.topics).length===0){
@@ -592,7 +592,7 @@ async function persist(parts){
   for(const p of parts){
     if(p==='users') await fullSync('app_users', DB.users, ['id'], u=>({id:u.id, username:u.username, password:u.password, name:u.name, role:u.role}));
     else if(p==='classes') await fullSync('classes', DB.classes.map(name=>({name})), ['name'], c=>({name:c.name}));
-    else if(p==='students') await fullSync('students', DB.students, ['id'], s=>({id:s.id, name:s.name, kelas:s.kelas}));
+    else if(p==='students') await fullSync('students', DB.students, ['id'], s=>({id:s.id, name:s.name, kelas:s.kelas, aktif: s.aktif!==false}));
     else if(p==='topics'){
       const flat = [];
       Object.keys(DB.topics).forEach(tahun=> (DB.topics[tahun]||[]).forEach(t=> flat.push({id:t.id, tahun, title:t.title})));
@@ -730,53 +730,78 @@ function noteFor(studentId, semester){
 }
 
 /* ================= DASHBOARD ================= */
+function radialGauge(value, max, colorHex, size){
+  size = size || 152;
+  const r = (size/2) - 15;
+  const c = 2*Math.PI*r;
+  const pct = Math.max(0, Math.min(1, (value||0)/max));
+  const offset = c * (1-pct);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--surface-alt)" stroke-width="15"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${colorHex}" stroke-width="15" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" transform="rotate(-90 ${size/2} ${size/2})"
+      style="transition:stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1);"/>
+    <text x="${size/2}" y="${size/2-1}" text-anchor="middle" font-size="28" font-weight="800" fill="var(--primary-dark)" font-family="'JetBrains Mono',monospace">${value?value.toFixed(2):'-'}</text>
+    <text x="${size/2}" y="${size/2+19}" text-anchor="middle" font-size="10.5" fill="var(--muted)">daripada ${max}.00</text>
+  </svg>`;
+}
 function renderDashboard(){
   const sem = ui.analysisSemester;
-  const totalMurid = DB.students.length;
+  const activeStudents = DB.students.filter(s=>s.aktif!==false);
+  const totalMurid = activeStudents.length;
   const totalEviden = DB.evidence.filter(e=>e.semester===sem).length;
-  const tps = DB.students.map(s=> finalTP(s.id, sem));
+  const tps = activeStudents.map(s=> finalTP(s.id, sem));
   const withTP = tps.filter(t=>t>0);
   const purata = withTP.length ? (withTP.reduce((a,b)=>a+b,0)/withTP.length) : 0;
   const dist = [0,0,0,0,0,0,0];
   tps.forEach(t=> dist[t]++);
   const kelasStats = DB.classes.map(k=>{
-    const studs = DB.students.filter(s=>s.kelas===k);
+    const studs = activeStudents.filter(s=>s.kelas===k);
     const kt = studs.map(s=>finalTP(s.id, sem)).filter(t=>t>0);
     const avg = kt.length ? kt.reduce((a,b)=>a+b,0)/kt.length : 0;
     return {kelas:k, avg, n:studs.length};
   }).filter(k=>k.n>0);
   const topKelas = kelasStats.slice().sort((a,b)=>b.avg-a.avg)[0];
+  const needsAttention = activeStudents.filter(s=> finalTP(s.id, sem)===0).slice(0,8);
 
   return `
-    <div style="margin-bottom:14px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
       <span class="chip chip-kelas">${esc(sem)} · ${esc(SEM_RANGES[sem]||'')}</span>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="navigate('rekod')">${I.upload} Rekod Eviden</button>
+        <button class="btn btn-outline btn-sm" onclick="openAddMurid()">${I.plus} Tambah Murid</button>
+        <button class="btn btn-outline btn-sm" onclick="navigate('analisis')">${I.chart} Analisis TP</button>
+      </div>
     </div>
+
     <div class="grid grid-4" style="margin-bottom:18px;">
       <div class="stat-card">
-        <div class="icon-badge">${I.users}</div>
+        <div class="icon-badge" style="background:var(--primary-light); color:var(--primary);">${I.users}</div>
         <div class="val">${totalMurid}</div>
-        <div class="lbl">Jumlah Murid</div>
+        <div class="lbl">Jumlah Murid Aktif</div>
       </div>
       <div class="stat-card">
-        <div class="icon-badge">${I.file}</div>
+        <div class="icon-badge" style="background:var(--gold-light); color:var(--gold);">${I.file}</div>
         <div class="val">${totalEviden}</div>
         <div class="lbl">Eviden Dimuat Naik (${esc(sem)})</div>
       </div>
       <div class="stat-card">
-        <div class="icon-badge">${I.chart}</div>
+        <div class="icon-badge" style="background:#DCEBF7; color:#2B6CA8;">${I.chart}</div>
         <div class="val">${purata? purata.toFixed(2):'-'}</div>
         <div class="lbl">Purata TP Keseluruhan</div>
       </div>
-      <div class="stat-card">
-        <div class="icon-badge">${I.star}</div>
-        <div class="val" style="font-size:18px;">${topKelas? esc(topKelas.kelas):'-'}</div>
+      <div class="stat-card" style="${topKelas?'cursor:pointer;':''}" ${topKelas?`onclick="selectFilterKelas('${esc(topKelas.kelas)}','rekod')"`:''}>
+        <div class="icon-badge" style="background:#F3E4F5; color:#8B3FA0;">${I.star}</div>
+        <div class="val" style="font-size:17px;">${topKelas? esc(topKelas.kelas):'-'}</div>
         <div class="lbl">Kelas Purata TP Tertinggi</div>
       </div>
     </div>
 
-    <div class="grid grid-2">
-      <div class="card">
-        <div class="card-head"><div><p class="card-title">Taburan TP (${esc(sem)})</p><p class="card-sub">Bilangan murid mengikut tahap penguasaan</p></div></div>
+    <div class="grid grid-2" style="align-items:start;">
+      <div class="card" style="text-align:center;">
+        <div class="card-head" style="justify-content:center; text-align:center;"><div><p class="card-title">Purata TP Keseluruhan</p><p class="card-sub">${esc(sem)} · murid aktif sahaja</p></div></div>
+        <div style="display:flex; justify-content:center; margin:6px 0 14px;">${radialGauge(purata, 6, purata>=5?'#2E7D4F':purata>=3?'#B8902E':'#C1662F')}</div>
+        <div style="text-align:left;">
         ${[0,1,2,3,4,5,6].map(t=>{
           const max = Math.max(...dist,1);
           const pct = (dist[t]/max*100);
@@ -786,19 +811,28 @@ function renderDashboard(){
             <div class="bar-val">${dist[t]}</div>
           </div>`;
         }).join('')}
+        </div>
       </div>
 
       <div class="card">
-        <div class="card-head"><div><p class="card-title">Perbandingan Antara Kelas</p><p class="card-sub">Purata TP setiap kelas (${esc(sem)})</p></div></div>
+        <div class="card-head"><div><p class="card-title">Perbandingan Antara Kelas</p><p class="card-sub">Ketik kelas untuk terus ke Rekod</p></div></div>
         ${kelasStats.length===0 ? emptyState('Tiada data','Tambah murid dan eviden untuk lihat perbandingan.') :
           kelasStats.slice().sort((a,b)=>b.avg-a.avg).map(k=>{
             const pct = (k.avg/6*100);
-            return `<div class="hbar-group">
+            return `<div class="hbar-group" style="cursor:pointer;" onclick="selectFilterKelas('${esc(k.kelas)}','rekod')">
               <div class="hbar-name">${esc(k.kelas)}</div>
               <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;"></div><div class="hbar-num">${k.avg.toFixed(2)}</div></div>
             </div>`;
           }).join('')
         }
+        <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+          <p class="card-title" style="font-size:13px; margin-bottom:8px;">🔔 Murid Belum Ada Eviden (${esc(sem)})</p>
+          ${needsAttention.length===0 ? `<p class="text-muted" style="font-size:12px;">Semua murid aktif sudah ada eviden. Bagus!</p>` :
+            `<div style="display:flex; flex-wrap:wrap; gap:7px;">
+              ${needsAttention.map(s=>`<span class="chip" style="background:var(--danger-light); color:var(--danger); cursor:pointer;" onclick="navigate('studentWorkspace',{studentId:'${s.id}'})">${esc(s.name.split(' ')[0])} →</span>`).join('')}
+            </div>`
+          }
+        </div>
       </div>
     </div>
   `;
@@ -846,14 +880,22 @@ window.saveMurid = async function(){
   const nama = document.getElementById('mNama').value.trim();
   const kelas = document.getElementById('mKelas').value;
   if(!nama){ toast('Sila masukkan nama murid.', true); return; }
-  DB.students.push({id:uid(), name:nama, kelas});
+  DB.students.push({id:uid(), name:nama, kelas, aktif:true});
   await persist(['students']);
   toast('Murid "'+nama+'" ditambah.');
   closeModal();
   navigate('murid');
 };
+window.toggleMuridAktif = async function(id){
+  const s = DB.students.find(x=>x.id===id);
+  if(!s) return;
+  s.aktif = !s.aktif;
+  await persist(['students']);
+  toast(s.aktif ? 'Murid ditanda Aktif.' : 'Murid ditanda Tidak Aktif.');
+  navigate('murid');
+};
 window.deleteMurid = function(id, name){
-  showConfirm('Buang murid "'+name+'"? Semua eviden, catatan dan TP murid ini akan turut dibuang.', async ()=>{
+  showConfirm('Buang murid "'+name+'"? Semua eviden, catatan dan TP murid ini akan turut dibuang. Jika murid hanya pindah kelas/sekolah, cadangan lebih baik ialah tanda "Tidak Aktif" sahaja supaya rekod eviden lama kekal tersimpan.', async ()=>{
     DB.students = DB.students.filter(s=>s.id!==id);
     DB.evidence = DB.evidence.filter(e=>e.studentId!==id);
     DB.notes = DB.notes.filter(n=>n.studentId!==id);
@@ -863,6 +905,20 @@ window.deleteMurid = function(id, name){
     navigate('murid');
   });
 };
+
+/* ================= JANTINA (KESAN DARIPADA NAMA) ================= */
+function inferGender(name){
+  const upper = (name||'').toUpperCase();
+  if(/\bBINTI\b/.test(upper)) return 'P';
+  if(/\bBIN\b/.test(upper)) return 'L';
+  return null;
+}
+function genderBadge(name){
+  const g = inferGender(name);
+  if(g==='L') return `<span title="Lelaki" style="font-size:15px;">👦🏻</span>`;
+  if(g==='P') return `<span title="Perempuan" style="font-size:15px;">🧕🏻</span>`;
+  return `<span class="text-muted" style="font-size:11px;">-</span>`;
+}
 
 /* ================= PENAPIS KELAS (MODAL PILIH KELAS) ================= */
 function filteredStudents(){
@@ -926,16 +982,13 @@ function renderRekod(){
     <div class="card">
       ${studs.length===0 ? emptyState('Tiada murid', 'Sila tambah murid dahulu di tab Murid & Kelas.') :
         studs.map(s=>{
-          const tp1 = finalTP(s.id,'Penggal 1'), tp2 = finalTP(s.id,'Penggal 2');
           return `<div class="student-row" style="cursor:pointer;" onclick="navigate('studentWorkspace',{studentId:'${s.id}'})">
             <div class="s-avatar">${esc(s.name.charAt(0).toUpperCase())}</div>
             <div style="flex:1; min-width:0;">
-              <div class="s-name">${esc(s.name)}</div>
+              <div class="s-name">${esc(s.name)} ${genderBadge(s.name)}</div>
               <div class="s-meta">${esc(s.kelas)}</div>
             </div>
-            <span class="tp-chip" style="background:${TP_COLOR[tp1]}" title="TP Penggal 1">${TP_LABEL[tp1]}</span>
-            <span class="tp-chip" style="background:${TP_COLOR[tp2]}" title="TP Penggal 2">${TP_LABEL[tp2]}</span>
-            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); navigate('studentWorkspace',{studentId:'${s.id}'})">${I.edit}</button>
+            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); navigate('studentWorkspace',{studentId:'${s.id}'})">${I.upload} Upload Eviden</button>
           </div>`;
         }).join('')
       }
@@ -955,12 +1008,14 @@ function renderMurid(){
     <div class="card">
       ${studs.length===0 ? emptyState('Tiada murid', 'Tambah murid menggunakan butang di atas.') :
         studs.map(s=>{
+          const aktif = s.aktif!==false;
           return `<div class="student-row">
             <div class="s-avatar">${esc(s.name.charAt(0).toUpperCase())}</div>
             <div style="flex:1; min-width:0;">
-              <div class="s-name">${esc(s.name)}</div>
+              <div class="s-name">${esc(s.name)} ${genderBadge(s.name)}</div>
               <div class="s-meta">${esc(s.kelas)}</div>
             </div>
+            <span class="chip" style="background:${aktif?'#E1F2E7':'var(--danger-light)'}; color:${aktif?'#1E7A46':'var(--danger)'}; cursor:pointer;" onclick="toggleMuridAktif('${s.id}')" title="Tekan untuk tukar status">${aktif?'● Aktif':'○ Tidak Aktif'}</span>
             <button class="btn btn-ghost btn-sm" onclick="deleteMurid('${s.id}','${esc(s.name).replace(/'/g,"")}')" style="color:var(--danger)">${I.trash}</button>
           </div>`;
         }).join('')
