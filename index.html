@@ -396,7 +396,7 @@ html,body{margin:0; padding:0;}
         </div>
         <div style="display:flex; gap:8px;">
           <button class="btn btn-outline btn-sm" onclick="navigate('deskriptor')">
-            ${I.steps}
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.5 8 12 12.5 21.5 8 12 3.5Z"/><path d="M6.5 10.3V15c0 1.66 2.46 3 5.5 3s5.5-1.34 5.5-3v-4.7"/><path d="M21.5 8v6.2"/></svg>
             <span>Deskriptor TP</span>
           </button>
           <button class="btn btn-outline btn-sm" onclick="doLogout()" style="color:var(--danger); border-color:var(--danger-light);" aria-label="Log Keluar">
@@ -682,13 +682,18 @@ window.navigate = function(view, params){
   document.getElementById('pageTitle').textContent = t[0];
   document.getElementById('pageCrumb').textContent = t[1];
   const c = document.getElementById('content');
-  if(view==='dashboard') c.innerHTML = renderDashboard();
-  else if(view==='murid') c.innerHTML = renderMurid();
-  else if(view==='tajuk') c.innerHTML = renderTajuk();
-  else if(view==='analisis') c.innerHTML = renderAnalisis();
-  else if(view==='deskriptor') c.innerHTML = renderDeskriptor();
-  else if(view==='akaun') c.innerHTML = renderAkaun();
-  else if(view==='studentWorkspace') c.innerHTML = renderStudentWorkspace(ui.studentId);
+  try{
+    if(view==='dashboard') c.innerHTML = renderDashboard();
+    else if(view==='murid') c.innerHTML = renderMurid();
+    else if(view==='tajuk') c.innerHTML = renderTajuk();
+    else if(view==='analisis') c.innerHTML = renderAnalisis();
+    else if(view==='deskriptor') c.innerHTML = renderDeskriptor();
+    else if(view==='akaun') c.innerHTML = renderAkaun();
+    else if(view==='studentWorkspace') c.innerHTML = renderStudentWorkspace(ui.studentId);
+  }catch(err){
+    console.error('Render error on view "'+view+'":', err);
+    toast('Ralat memaparkan halaman: '+err.message, true);
+  }
   closeSidebarIfMobile();
   window.scrollTo(0,0);
 };
@@ -921,12 +926,16 @@ window.deleteTajuk = function(tahun, id){
     navigate('tajuk');
   });
 };
+window.selectTajukTahun = function(t){
+  ui.tajukTahun = t;
+  navigate('tajuk');
+};
 function renderTajuk(){
   const tahuns = Object.keys(DB.topics).sort((a,b)=>Number(a)-Number(b));
   return `
     <div class="toolbar">
       <div class="seg">
-        ${tahuns.map(t=>`<button class="${ui.tajukTahun===t?'active':''}" onclick="ui.tajukTahun='${t}'; navigate('tajuk')">Tahun ${t}</button>`).join('')}
+        ${tahuns.map(t=>`<button class="${ui.tajukTahun===t?'active':''}" onclick="selectTajukTahun('${t}')">Tahun ${t}</button>`).join('')}
       </div>
       <button class="btn btn-outline btn-sm" onclick="addTahunBaharu()">${I.plus} Tahun Baharu</button>
       <button class="btn btn-primary btn-sm" onclick="addTajuk()">${I.plus} Tambah Tajuk</button>
@@ -1276,10 +1285,9 @@ function renderAkaun(){
 /* ================= DESKRIPTOR TP (HALAMAN) ================= */
 function renderDeskriptor(){
   return `
-    <div class="card" style="margin-bottom:18px; background:linear-gradient(135deg, var(--primary-light), #fff);">
-      <p class="card-title" style="margin-bottom:2px; font-size:16px;">PBD Pendidikan Islam</p>
-      <p class="card-title" style="margin-bottom:8px; font-size:16px;">Sekolah Rendah</p>
-      <p class="card-sub" style="margin:0;">Kriteria pentaksiran berasaskan Dokumen Standard Kurikulum dan Pentaksiran (DSKP)</p>
+    <div class="card" style="margin-bottom:18px; background:linear-gradient(135deg, var(--primary-light), #fff); overflow-wrap:break-word;">
+      <p class="card-title" style="margin-bottom:10px; font-size:15px; line-height:1.35; white-space:normal;">PBD Pendidikan Islam Sekolah Rendah</p>
+      <p class="card-sub" style="margin:0; line-height:1.4;">Kriteria pentaksiran berasaskan Dokumen Standard Kurikulum dan Pentaksiran (DSKP)</p>
     </div>
     <div class="grid grid-2">
       ${[1,2,3,4,5,6].map(t=>{
