@@ -167,6 +167,8 @@ tr:hover td{background:#F5F9F5;}
 .tp-badge .lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;opacity:.85;color:#fff;}
 .two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-top:18px;}
 @media(max-width:820px){.two-col{grid-template-columns:1fr;}}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;}
+@media(max-width:900px){.three-col{grid-template-columns:1fr;}}
 @media(max-width:640px){.profile-id .name{font-size:16.5px;} .pf-avatar{width:44px;height:44px;font-size:15px;} .tp-badge{padding:10px 16px;} .tp-badge .num{font-size:24px;}}
 .ev-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--garis);align-items:center;}
 .ev-item:last-child{border-bottom:none;}
@@ -511,6 +513,7 @@ function logout(){ SESSION=null; localStorage.removeItem('pbd_session_user'); re
 function appShell(activeKey, innerHTML){
   const isAdmin = SESSION.role==='admin';
   const navItems = isAdmin ? [
+    {key:'dash', label:'Dashboard', icon:'🏠'},
     {key:'guru', label:'Guru', icon:'👤'},
     {key:'murid', label:'Murid', icon:'🎓'},
     {key:'rekod', label:'Rekod', icon:'📝'},
@@ -565,7 +568,8 @@ function tpOf(student){
 /* ============ ADMIN VIEW ============ */
 async function renderAdmin(){
   VIEW.page='admin';
-  if(!VIEW.tab || !['guru','murid','rekod','tajuk','laporan','rujukan','log','selenggara'].includes(VIEW.tab)) VIEW.tab='guru';
+  if(!VIEW.tab || !['dash','guru','murid','rekod','tajuk','laporan','rujukan','log','selenggara'].includes(VIEW.tab)) VIEW.tab='dash';
+  if(VIEW.tab==='dash'){ await paintDashboard(); return; }
   if(VIEW.tab==='murid'){ await paintMurid(); return; }
   if(VIEW.tab==='rekod'){ await paintRekod(); return; }
   if(VIEW.tab==='tajuk'){ await paintTajuk(); return; }
@@ -590,7 +594,8 @@ async function paintAdmin(){
 /* --- Shared nav handler covering Dashboard/Murid/Rekod/Tajuk/Laporan/Rujukan/Admin tabs --- */
 function navigateShared(k){
   if(SESSION.role==='admin'){
-    if(k==='murid') paintMurid();
+    if(k==='dash') paintDashboard();
+    else if(k==='murid') paintMurid();
     else if(k==='rekod') paintRekod();
     else if(k==='tajuk') paintTajuk();
     else if(k==='laporan') paintLaporan();
@@ -1292,10 +1297,40 @@ async function removeClass(i){
 /* ============ GURU DASHBOARD ============ */
 async function renderGuru(){
   VIEW.page='guru'; VIEW.tab='dash';
-  await paintGuru();
+  await paintDashboard();
 }
 async function paintGuru(){
   VIEW.page='guru'; VIEW.tab='dash';
+  await paintDashboard();
+}
+
+/* ============ DASHBOARD (Admin & Guru — shared analytics overview) ============ */
+function relTime(ts){
+  const d = new Date(ts);
+  const diffMs = Date.now()-d.getTime();
+  const mins = Math.floor(diffMs/60000);
+  if(mins<1) return 'baru sahaja';
+  if(mins<60) return mins+' minit yang lalu';
+  const hrs = Math.floor(mins/60);
+  if(hrs<24) return hrs+' jam yang lalu';
+  const days = Math.floor(hrs/24);
+  if(days<7) return days+' hari yang lalu';
+  return d.toLocaleDateString('ms-MY');
+}
+function isoWeekLabel(dateStr){
+  const d = new Date(dateStr);
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay()+6)%7;
+  target.setDate(target.getDate()-dayNr+3);
+  const firstThursday = new Date(target.getFullYear(),0,4);
+  const diff = target - firstThursday;
+  const week = 1+Math.round(diff/(7*24*60*60*1000));
+  return 'Minggu '+week;
+}
+async function paintDashboard(){
+  const isAdmin = SESSION.role==='admin';
+  VIEW.page = isAdmin ? 'admin' : 'guru';
+  VIEW.tab='dash';
   const el = document.getElementById('app');
   const cls = VIEW.classFilter;
   const activeStudents = DB.students.filter(s=>!s.deleted);
@@ -1319,104 +1354,177 @@ async function paintGuru(){
       <div class="sc-bar-track"><div class="sc-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
     </div>`;
   }).join('');
-  const avgTP = (tpCounts.reduce((s,c,i)=>s+c*(i+1),0)/Math.max(1,activeStudents.length)).toFixed(1);
+  const totalEvidence = activeStudents.reduce((a,s)=>a+s._evidence.length,0);
+  const verifiedCount = activeStudents.filter(s=>DB.verifiedAll[s.id]).length;
   const noEvidence = activeStudents.filter(s=> s._evidence.length===0);
-  const notifRows = noEvidence.slice(0,6).map(s=>`
-    <div class="ev-item" style="padding:9px 0;">
-      <div class="sc-avatar" style="width:34px;height:34px;font-size:11px;">${initials(s.name)}</div>
-      <div class="ev-info">
-        <div class="t" style="font-size:13px;">${s.name}</div>
-        <div class="d">${s.class}</div>
+  const avgTP = (tpCounts.reduce((s,c,i)=>s+c*(i+1),0)/Math.max(1,activeStudents.length)).toFixed(1);
+
+  /* ---- Per-class stats: eviden dihantar vs jangkaan (murid x tajuk tahun) ---- */
+  const classNames = DB.meta.classes;
+  const classStats = classNames.map(c=>{
+    const year = yearOfClass(c);
+    const topicsCount = (DB.meta.topics[year]||[]).length;
+    const studs = activeStudents.filter(s=>s.class===c);
+    const expected = studs.length*topicsCount;
+    const actual = studs.reduce((sum,s)=>sum+s._evidence.length,0);
+    const pct = expected>0 ? Math.round((actual/expected)*100) : 0;
+    const avgTPc = studs.length ? +(studs.reduce((sum,s)=>sum+tpOf(s),0)/studs.length).toFixed(2) : 0;
+    return {name:c, studentCount:studs.length, expected, actual, pct:Math.min(100,pct), avgTPc};
+  });
+  const topClass = classStats.filter(c=>c.studentCount>0).sort((a,b)=>b.pct-a.pct)[0];
+
+  const classProgressRows = classStats.map(c=>`
+    <div class="student-row" style="cursor:pointer;" onclick="VIEW.classFilter='${c.name}';paintDashboard();">
+      <div class="sc-top"><div class="sc-avatar">🏫</div>
+        <div><div class="sc-name">${c.name}</div><div class="sc-class">${c.studentCount} murid</div></div>
+        <div class="sc-right"><b style="color:var(--hijau-gelap);font-size:15px;">${c.pct}%</b><div class="sc-ev">${c.actual} / ${c.expected}</div></div>
       </div>
-      <span class="pill" style="background:#FBEAE6;color:var(--merah);flex-shrink:0;">Belum ada eviden</span>
+      <div class="sc-bar-track"><div class="sc-bar-fill" style="width:${c.pct}%;background:${c.pct<40?'var(--merah)':c.pct<70?'var(--emas)':'var(--hijau)'}"></div></div>
     </div>`).join('');
-  const notifMore = noEvidence.length>6 ? `<div style="font-size:12px;color:var(--tulisan-lembut);text-align:center;padding-top:8px;">+${noEvidence.length-6} murid lagi</div>` : '';
-  const lowTP = activeStudents.filter(s=> s._evidence.length>0 && tpOf(s)<=2);
-  const lowTPRows = lowTP.slice(0,8).map(s=>`
+
+  /* ---- Tajuk paling ramai belum hantar ---- */
+  const topicGaps = [];
+  Object.keys(DB.meta.topics||{}).forEach(year=>{
+    const topics = DB.meta.topics[year]||[];
+    const yearClasses = classNames.filter(c=>yearOfClass(c)===year);
+    const yearStudents = activeStudents.filter(s=>yearClasses.includes(s.class));
+    if(yearStudents.length===0) return;
+    topics.forEach(topic=>{
+      const belum = yearStudents.filter(s=> !s._evidence.some(e=>e.topic===topic)).length;
+      if(belum>0) topicGaps.push({topic, year, belum});
+    });
+  });
+  topicGaps.sort((a,b)=>b.belum-a.belum);
+  const topicGapRows = topicGaps.slice(0,5).map((t,i)=>`
     <div class="ev-item" style="padding:9px 0;">
-      <div class="sc-avatar" style="width:34px;height:34px;font-size:11px;">${initials(s.name)}</div>
-      <div class="ev-info">
-        <div class="t" style="font-size:13px;">${s.name}</div>
-        <div class="d">${s.class} &middot; ${s._evidence.length} eviden</div>
-      </div>
-      <span class="pill tp${tpOf(s)}" style="flex-shrink:0;">TP${tpOf(s)}</span>
-    </div>`).join('');
-  const lowTPMore = lowTP.length>8 ? `<div style="font-size:12px;color:var(--tulisan-lembut);text-align:center;padding-top:8px;">+${lowTP.length-8} murid lagi</div>` : '';
+      <div class="sc-avatar" style="width:30px;height:30px;font-size:12px;">${i+1}</div>
+      <div class="ev-info"><div class="t" style="font-size:13px;">${t.topic}</div><div class="d">Tahun ${t.year}</div></div>
+      <span class="pill" style="background:#FBEAE6;color:var(--merah);flex-shrink:0;">${t.belum} belum hantar</span>
+    </div>`).join('') || '<div class="empty" style="padding:16px;"><div class="em-ic">✅</div>Semua tajuk sudah ada eviden.</div>';
+
+  /* ---- Trend penghantaran mingguan (6 minggu terkini) ---- */
+  const allEvidence = Object.values(DB.evidenceAll||{}).flat().filter(e=>e && !e.deleted && e.date);
+  const weekBuckets = {};
+  allEvidence.forEach(e=>{ const wk = isoWeekLabel(e.date); weekBuckets[wk]=(weekBuckets[wk]||0)+1; });
+  const sortedWeeks = Object.keys(weekBuckets).sort((a,b)=> parseInt(a.replace('Minggu ',''))-parseInt(b.replace('Minggu ','')));
+  const last6Weeks = sortedWeeks.slice(-6);
+  const trendLabels = last6Weeks.length? last6Weeks : ['Tiada data'];
+  const trendData = last6Weeks.length? last6Weeks.map(w=>weekBuckets[w]) : [0];
+  const thisWeekCount = last6Weeks.length? weekBuckets[last6Weeks[last6Weeks.length-1]] : 0;
+
+  /* ---- Aktiviti terkini ---- */
+  const activityRows = (DB.activityLog||[]).slice(0,6).map(l=>`
+    <div class="ev-item" style="padding:8px 0;">
+      <div class="sc-avatar" style="width:30px;height:30px;font-size:13px;">📌</div>
+      <div class="ev-info"><div class="t" style="font-size:12.5px;"><b>${l.action}</b>${l.detail?' — '+l.detail:''}</div><div class="d">${relTime(l.ts)}</div></div>
+    </div>`).join('') || '<div class="empty" style="padding:16px;"><div class="em-ic">🗒️</div>Tiada aktiviti direkod lagi.</div>';
+
+  /* ---- Peringatan ---- */
   const today = new Date();
-  const activeReminders = (DB.reminders||[]).filter(r=>{ const d=new Date(r.date); return Math.ceil((d-today)/(1000*60*60*24)) >= -1; }).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const reminderCards = activeReminders.map(r=>{
-    const d = new Date(r.date);
-    const diff = Math.ceil((d-today)/(1000*60*60*24));
-    const urgent = diff<=7;
-    const bg = diff<=0 ? 'background:#FBEAE6;border:1px solid #E57373;' : urgent ? 'background:#FFF8E1;border:1px solid var(--emas);' : 'background:#F1F8F4;border:1px solid var(--garis);';
-    const icon = diff<=0 ? '🚨' : urgent ? '⚠️' : '🗓️';
-    const label = diff<0 ? `Tamat ${Math.abs(diff)} hari lepas` : diff===0 ? 'Hari ini!' : `${diff} hari lagi`;
-    return `<div class="card" style="margin-top:8px;${bg}display:flex;align-items:center;gap:12px;padding:12px 16px;">
-      <span style="font-size:20px;">${icon}</span>
-      <div><b style="color:var(--hijau-gelap);font-size:13.5px;">${r.title}</b><br><span style="font-size:12px;color:var(--tulisan-lembut);">${d.toLocaleDateString('ms-MY')} — ${label}</span></div>
+  const upcomingReminders = (DB.reminders||[]).filter(r=>{ const d=new Date(r.date); const diff=Math.ceil((d-today)/(1000*60*60*24)); return diff>=-1 && diff<=7; }).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const alertCards = [];
+  upcomingReminders.forEach(r=>{
+    const d=new Date(r.date); const diff=Math.ceil((d-today)/(1000*60*60*24));
+    const label = diff<0?`Tamat ${Math.abs(diff)} hari lepas`:diff===0?'Hari ini!':`${diff} hari lagi`;
+    alertCards.push({icon:diff<=0?'🚨':'⚠️', title:r.title, sub:label, tone:diff<=0?'merah':'emas'});
+  });
+  if(noEvidence.length>0) alertCards.push({icon:'📋', title:noEvidence.length+' murid masih belum hantar eviden', sub:'Lihat Senarai Murid untuk perincian', tone:'emas'});
+  alertCards.push({icon:'📤', title:'Penghantaran minggu ini', sub:thisWeekCount+' eviden dihantar', tone:'hijau'});
+  const alertHTML = alertCards.slice(0,4).map(a=>{
+    const bg = a.tone==='merah'?'background:#FBEAE6;border:1px solid #E57373;':a.tone==='emas'?'background:#FFF8E1;border:1px solid var(--emas);':'background:#F1F8F4;border:1px solid var(--garis);';
+    return `<div style="margin-top:8px;padding:12px 14px;border-radius:10px;${bg}display:flex;align-items:center;gap:12px;">
+      <span style="font-size:19px;">${a.icon}</span>
+      <div><b style="color:var(--hijau-gelap);font-size:13px;">${a.title}</b><br><span style="font-size:11.5px;color:var(--tulisan-lembut);">${a.sub}</span></div>
     </div>`;
   }).join('');
-  const classNames = DB.meta.classes;
-  const classAvgs = classNames.map(c=>{
-    const studs = activeStudents.filter(s=>s.class===c);
-    if(studs.length===0) return 0;
-    return +(studs.reduce((sum,s)=>sum+tpOf(s),0)/studs.length).toFixed(2);
-  });
+
+  const greeting = isAdmin ? `Assalamualaikum, ${SESSION.name}` : `Assalamualaikum, Cikgu ${SESSION.name}`;
+  const jumlahTajuk = Object.values(DB.meta.topics||{}).reduce((a,arr)=>a+(arr?arr.length:0),0);
+  const jumlahGuru = (DB.meta.users||[]).filter(u=>u.role==='guru').length;
 
   const content = `
     <div class="school-banner">
       <div class="sb-emoji">📗</div>
-      <div style="flex:1;"><div class="sb-name">SJK(C) Ladang Grisek</div><div class="sb-meta">Kod: JBC1049 &middot; Panitia Pendidikan Islam &middot; Sesi ${new Date().getFullYear()}</div></div>
+      <div style="flex:1;"><div class="sb-name">${greeting}</div><div class="sb-meta">SJK(C) Ladang Grisek &middot; Kod: JBC1049 &middot; Sesi ${new Date().getFullYear()}</div></div>
       <div class="sb-clock" id="liveClock"><div class="sb-clock-time" id="liveClockTime">--:--:--</div><div class="sb-clock-date" id="liveClockDate">—</div></div>
     </div>
     <div class="grid-cards">
       <div class="stat-card"><span class="ic">🎓</span><div class="n">${activeStudents.length}</div><div class="l">Jumlah Murid</div></div>
       <div class="stat-card"><span class="ic">🏫</span><div class="n">${DB.meta.classes.length}</div><div class="l">Kelas</div></div>
-      <div class="stat-card"><span class="ic">📎</span><div class="n">${activeStudents.reduce((a,s)=>a+s._evidence.length,0)}</div><div class="l">Jumlah Eviden</div></div>
+      <div class="stat-card"><span class="ic">📎</span><div class="n">${totalEvidence}</div><div class="l">Eviden Dihantar</div></div>
+      <div class="stat-card"><span class="ic">⏳</span><div class="n">${noEvidence.length}</div><div class="l">Belum Ada Eviden</div></div>
+      <div class="stat-card"><span class="ic">✅</span><div class="n">${verifiedCount}</div><div class="l">Telah Disahkan</div></div>
       <div class="stat-card"><span class="ic">⭐</span><div class="n">${avgTP}</div><div class="l">Purata TP</div></div>
     </div>
-    <div class="card" style="margin-top:12px;background:linear-gradient(120deg,var(--emas-l),#fff);border:1px solid var(--emas);display:flex;align-items:center;gap:12px;">
-      <span style="font-size:24px;">📢</span>
-      <div><b style="color:var(--hijau-gelap);">Selamat datang, Cikgu ${SESSION.name}!</b><br><span style="color:var(--tulisan-lembut);">Tahun ini sekolah berakhir pada ${SCHOOL_YEAR_END_LABEL} (${schoolYearDaysLeft()} hari lagi).</span></div>
-    </div>
-    ${reminderCards}
-    <div class="two-col" style="margin-top:20px;">
+    <div class="two-col">
       <div class="card">
-        <h2 style="margin-top:0;">Taburan TP Keseluruhan</h2>
-        <canvas id="tpDistChart" height="85"></canvas>
+        <h2 style="margin-top:0;">Kemajuan Setiap Kelas</h2>
+        <div class="student-list">${classProgressRows || '<div class="empty"><div class="em-ic">🏫</div>Tiada kelas didaftarkan.</div>'}</div>
       </div>
       <div class="card">
-        <h2 style="margin-top:0;">🔔 Notifikasi</h2>
-        ${notifRows || '<div class="empty" style="padding:16px;"><div class="em-ic">✅</div>Semua murid sudah ada eviden.</div>'}
-        ${notifMore}
+        <h2 style="margin-top:0;">Perbandingan Pencapaian Kelas</h2>
+        <canvas id="classCompChart" height="180"></canvas>
       </div>
     </div>
-    <div class="section-head"><h2>🔻 TP Rendah (TP1–TP2)</h2></div>
-    <div class="card">
-      ${lowTPRows || '<div class="empty" style="padding:16px;"><div class="em-ic">✅</div>Tiada murid pada TP1/TP2 buat masa ini.</div>'}
-      ${lowTPMore}
+    <div class="three-col">
+      ${topClass ? `<div class="card" style="background:linear-gradient(120deg,var(--emas-l),#fff);border:1px solid var(--emas);">
+        <h2 style="margin-top:0;">🏆 Kelas Terbaik</h2>
+        <div style="font-size:22px;font-weight:800;color:var(--hijau-gelap);">${topClass.name}</div>
+        <div style="font-size:13px;color:var(--tulisan-lembut);margin-top:2px;">Pencapaian eviden: <b style="color:var(--hijau);">${topClass.pct}%</b> &middot; Purata TP: ${topClass.avgTPc}</div>
+      </div>` : '<div class="card"><h2 style="margin-top:0;">🏆 Kelas Terbaik</h2><div class="empty" style="padding:8px 0;">Tiada data lagi.</div></div>'}
+      <div class="card">
+        <h2 style="margin-top:0;">🗒️ Aktiviti Terkini</h2>
+        ${activityRows}
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0;">🔔 Peringatan</h2>
+        ${alertHTML}
+      </div>
     </div>
-    <div class="section-head"><h2>Perbandingan TP Antara Kelas</h2></div>
-    <div class="card"><canvas id="classCompChart" height="90"></canvas></div>
+    <div class="section-head"><h2>📚 Tajuk Paling Ramai Belum Hantar</h2></div>
+    <div class="card">${topicGapRows}</div>
+    <div class="two-col">
+      <div class="card">
+        <h2 style="margin-top:0;">Trend Penghantaran (${last6Weeks.length||1} Minggu Terkini)</h2>
+        <canvas id="trendChart" height="130"></canvas>
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0;">📊 Statistik Pantas</h2>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;">
+          <div style="display:flex;justify-content:space-between;"><span>Jumlah Murid</span><b>${activeStudents.length}</b></div>
+          <div style="display:flex;justify-content:space-between;"><span>Jumlah Kelas</span><b>${DB.meta.classes.length}</b></div>
+          <div style="display:flex;justify-content:space-between;"><span>Jumlah Tajuk</span><b>${jumlahTajuk}</b></div>
+          <div style="display:flex;justify-content:space-between;"><span>Jumlah Guru</span><b>${jumlahGuru}</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="section-head"><h2>Taburan TP Keseluruhan</h2></div>
+    <div class="card"><canvas id="tpDistChart" height="85"></canvas></div>
     <div class="section-head"><h2>Senarai Murid</h2></div>
     <div class="toolbar"><select id="guruClassFilter">${opts}</select></div>
     <div class="student-list">${cards || '<div class="empty"><div class="em-ic">🎓</div>Tiada murid dalam kelas ini.</div>'}</div>
   `;
   el.innerHTML = appShell('dash', content);
   wireShellNav(navigateShared);
-  document.getElementById('guruClassFilter').onchange=(e)=>{VIEW.classFilter=e.target.value; paintGuru();};
+  document.getElementById('guruClassFilter').onchange=(e)=>{VIEW.classFilter=e.target.value; paintDashboard();};
   startLiveClock();
+  new Chart(document.getElementById('classCompChart'), {
+    type:'bar',
+    data:{ labels:classStats.map(c=>c.name),
+      datasets:[{label:'Pencapaian (%)', data:classStats.map(c=>c.pct), backgroundColor:['#1B7A4B','#3E7A4E','#A9832A','#D4A73B','#146A40','#5C9B6E','#0F5233','#C79A4B','#2E8B57'], borderRadius:8, maxBarThickness:48}]},
+    options:{plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.parsed.y+'%'}}}, scales:{y:{beginAtZero:true, max:100, ticks:{callback:v=>v+'%'}}}}
+  });
+  new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{ labels:trendLabels,
+      datasets:[{label:'Eviden Dihantar', data:trendData, borderColor:'#1B7A4B', backgroundColor:'rgba(27,122,75,.12)', tension:.35, fill:true, pointBackgroundColor:'#1B7A4B'}]},
+    options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{stepSize:1}}}}
+  });
   new Chart(document.getElementById('tpDistChart'), {
     type:'bar',
     data:{ labels:['TP1','TP2','TP3','TP4','TP5','TP6'],
       datasets:[{label:'Bilangan Murid', data:tpCounts, backgroundColor:['#B5493D','#C97362','#D6A94C','#C79A4B','#5C9B6E','#3E7A4E'], borderRadius:8, maxBarThickness:48}]},
     options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, ticks:{stepSize:1}}}}
-  });
-  new Chart(document.getElementById('classCompChart'), {
-    type:'bar',
-    data:{ labels:classNames,
-      datasets:[{label:'Purata TP', data:classAvgs, backgroundColor:'#1B7A4B', borderRadius:8, maxBarThickness:48}]},
-    options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, max:6}}}
   });
 }
 const SCHOOL_YEAR_END = new Date(2026,11,4,23,59,59);
