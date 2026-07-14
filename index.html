@@ -76,16 +76,11 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 .sb-logout{margin-top:auto;padding-top:16px;}
 .sb-logout button{width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.2);padding:10px;border-radius:10px;font-size:12.5px;font-weight:700;}
 .sb-logout button:hover{background:rgba(255,255,255,.15);}
-.sb-quote-card{margin-top:16px;background:linear-gradient(160deg,#0F5233 0%,#0A3A26 100%);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px 14px 16px;position:relative;overflow:hidden;}
-.sb-quote-head{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.75);cursor:pointer;position:relative;z-index:2;}
-.sb-quote-head .q{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
-.sb-quote-scene{position:relative;height:64px;margin:10px 0 4px;}
-.sb-quote-moon{position:absolute;top:0;right:8px;font-size:15px;opacity:.9;}
-.sb-quote-star{position:absolute;font-size:8px;color:rgba(255,255,255,.55);}
-.sb-quote-mosque{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:34px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35));}
-.sb-quote-book{position:absolute;bottom:-2px;left:8px;font-size:16px;opacity:.9;}
-.sb-quote-leaf{position:absolute;bottom:-2px;right:6px;font-size:16px;opacity:.85;}
-.sb-quote-text{font-size:11px;line-height:1.55;color:rgba(255,255,255,.85);font-style:italic;text-align:center;position:relative;z-index:2;padding:0 2px;}
+.sb-quote-card{margin-top:16px;background:linear-gradient(160deg,#0F5233 0%,#0A3A26 100%);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:15px 15px 16px;}
+.sb-quote-no{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);font-weight:700;}
+.sb-quote-title{font-size:12.5px;font-weight:800;color:var(--emas);margin:5px 0 8px;line-height:1.35;}
+.sb-quote-text{font-size:11.5px;font-style:italic;color:rgba(255,255,255,.88);line-height:1.55;}
+.sb-quote-tip{font-size:10.5px;color:rgba(255,255,255,.55);margin-top:8px;line-height:1.45;border-top:1px dashed rgba(255,255,255,.15);padding-top:8px;}
 .sb-toggle{display:none;}
 .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
 .topbar .tb-user{background:var(--kad);border:1px solid var(--garis);color:var(--tulisan);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:20px;white-space:nowrap;margin-left:auto;}
@@ -299,6 +294,35 @@ let SESSION = null;
 let VIEW = { page:'login', tab:'guru', classFilter:'ALL', studentId:null };
 
 const DEFAULT_CLASSES = ['Tahun 3A','Tahun 3B','Tahun 3E','Tahun 4A','Tahun 4C','Tahun 4D','Tahun 6B','Tahun 6C'];
+const ALGHAZALI_QUOTES = [
+  {no:'1/23', title:'Ilmu Tanpa Amal Tiada Guna', quote:'"Ilmu yang tidak diamalkan ibarat pokok yang tidak berbuah."', tip:'Belajar untuk beramal, bukan sekadar tahu.'},
+  {no:'2/23', title:'Amal Tanpa Ikhlas Sia-Sia', quote:'"Amal ibarat tubuh. Ikhlas adalah roh. Amal tanpa ikhlas seperti mayat tak bernyawa."', tip:'Periksa niat kita hari ini.'},
+  {no:'3/23', title:'Bersihkan Hati dari Penyakit Rohani', quote:'"Hati yang penuh dengan riak, hasad dan takabbur tidak akan nampak kebenaran."', tip:'Rawat hati sebelum terlambat.'},
+  {no:'4/23', title:'Kematian Itu Pasti', quote:'"Kematian adalah pintu yang akan dilalui semua makhluk."', tip:'Sudah bersediakah kita?'},
+  {no:'5/23', title:'Jangan Sibuk dengan Perkara Sia-Sia', quote:'"Orang berakal tidak akan membuang masa pada sesuatu yang tidak berguna."', tip:'Buat apa yang penting, bukan apa yang popular.'},
+  {no:'6/23', title:'Jadikan Amal sebagai Bekal', quote:'"Bekalmu ke akhirat bukan ilmu yang kau tahu, tapi amal yang kau buat."', tip:'Amal hari ini, untuk hidup yang kekal nanti.'},
+  {no:'7/23', title:'Banyakkan Doa dan Minta Hidayah', quote:'"Hidayah itu milik Allah. Jangan sombong dengan amal, mohon agar Dia terus pimpin."', tip:'Jangan berhenti minta petunjuk.'},
+  {no:'8/23', title:'Jangan Tertipu dengan Ramai Orang', quote:'"Yang benar tetap benar walaupun sedikit yang ikut."', tip:'Berpegang pada kebenaran, bukan ikut majoriti.'},
+  {no:'9/23', title:'Segerakan Taubat', quote:'"Jangan tangguh taubat. Kematian tidak pernah menunggu."', tip:'Jangan tunggu esok untuk taubat hari ini.'},
+  {no:'10/23', title:'Ambil Pengajaran dari Kematian', quote:'"Setiap kematian adalah peringatan kepada yang masih hidup."', tip:'Belajar dari kematian sebelum kita dipelajari.'},
+  {no:'11/23', title:'Berguru dengan Orang Soleh', quote:'"Ambillah ilmu dari guru yang mengamalkan apa yang diajarkan."', tip:'Cari guru yang membimbing dengan hati dan akhlak.'},
+  {no:'12/23', title:'Bersabar atas Jalan Kebaikan', quote:'"Jalan ke syurga tidak ditabur bunga, tetapi duri ujian."', tip:'Sabar adalah kunci istiqamah.'},
+  {no:'13/23', title:'Tinggalkan Maksiat Sepenuhnya', quote:'"Maksiat itu racun bagi hati. Jangan beri alasan untuk terus berdosa."', tip:'Berani tinggalkan dosa, walau terasa susah.'},
+  {no:'14/23', title:'Pilih Sahabat yang Baik', quote:'"Sahabat yang soleh adalah cermin dan pelindung dari kebinasaan."', tip:'Nilai semula siapa kita rapat hari ini.'},
+  {no:'15/23', title:'Sentiasa Berzikir dan Ingat Allah', quote:'"Zikrullah adalah makanan hati. Tanpa zikir, hati jadi keras."', tip:'Lapangkan masa untuk ingat Allah, walau sesaat.'},
+  {no:'16/23', title:'Usaha Cari Rezeki Halal', quote:'"Rezeki yang halal membawa keberkatan, walau sedikit."', tip:'Jangan gadaikan akhirat demi sedikit dunia.'},
+  {no:'17/23', title:'Jangan Kejar Pujian Manusia', quote:'"Manusia akan lupa. Tapi Allah tak pernah lalai."', tip:'Redha Allah lebih utama dari like dan views.'},
+  {no:'18/23', title:'Baca & Fahami Al-Quran', quote:'"Al-Quran adalah ubat bagi jiwa, cahaya bagi hati."', tip:'Mulakan dengan satu ayat sehari, fahami maknanya.'},
+  {no:'19/23', title:'Jaga Solat Lima Waktu', quote:'"Solat itu tiang agama. Jika runtuh, runtuhlah seluruh binaan iman."', tip:'Jangan tinggalkan solat, walau sesibuk mana pun.'},
+  {no:'20/23', title:'Hiasi Diri dengan Akhlak Mulia', quote:'"Akhlak lebih berat dari amal di timbangan akhirat."', tip:'Akhlak indah cerminan iman.'},
+  {no:'21/23', title:'Muhasabah Diri Setiap Hari', quote:'"Barang siapa yang tidak menghisab dirinya, dia sedang berjalan ke arah kebinasaan."', tip:'Tanya diri setiap malam: "Apa yang aku buat hari ini kerana Allah?"'},
+  {no:'22/23', title:'Gunakan Masa Muda Sebaiknya', quote:'"Masa muda seperti emas yang sukar dicari kembali."', tip:'Guna masa dengan bijak, bukan ikut hawa nafsu.'},
+  {no:'23/23', title:'Utamakan Akhirat, Bukan Dunia', quote:'"Dunia ini ladang. Akhiratlah tempat menuai."', tip:'Kejar akhirat, dunia akan ikut.'}
+];
+function pesananHariIni(){
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+  return ALGHAZALI_QUOTES[dayOfYear % ALGHAZALI_QUOTES.length];
+}
 const DEFAULT_TOPICS_BY_YEAR = {
  "3": [
   "Konsep Nama Allah Al-Alim & Al-Hakim","Konsep Bersuci Dalam Islam","Wahyu Teragung","Adab Tidur",
@@ -550,6 +574,7 @@ function logout(){ SESSION=null; localStorage.removeItem('pbd_session_user'); re
 /* ============ APP SHELL (SIDEBAR GELAP) ============ */
 function appShell(activeKey, innerHTML){
   const isAdmin = SESSION.role==='admin';
+  const pesanan = pesananHariIni();
   const navGroups = isAdmin ? [
     {label:'UTAMA', items:[{key:'dash', label:'Dashboard', icon:'🏠'}]},
     {label:'PENGURUSAN', items:[
@@ -589,17 +614,10 @@ function appShell(activeKey, innerHTML){
       <div class="sb-brand"><span class="mark">📗</span><span class="txt">Sistem Perekodan<br>PBD Pendidikan Islam</span></div>
       ${navHTML}
       <div class="sb-quote-card">
-        <div class="sb-quote-head"><span class="q">?</span> Bantuan</div>
-        <div class="sb-quote-scene">
-          <span class="sb-quote-moon">🌙</span>
-          <span class="sb-quote-star" style="top:4px;left:14px;">✦</span>
-          <span class="sb-quote-star" style="top:16px;left:34px;">✦</span>
-          <span class="sb-quote-star" style="top:2px;left:60px;">✦</span>
-          <span class="sb-quote-book">📖</span>
-          <span class="sb-quote-leaf">🌿</span>
-          <span class="sb-quote-mosque">🕌</span>
-        </div>
-        <div class="sb-quote-text">"Ilmu itu cahaya, amal itu bekal,<br>akhlak itu mahkota."</div>
+        <div class="sb-quote-no">Pesanan Imam Al-Ghazali &middot; ${pesanan.no}</div>
+        <div class="sb-quote-title">${pesanan.title}</div>
+        <div class="sb-quote-text">${pesanan.quote}</div>
+        <div class="sb-quote-tip">💡 ${pesanan.tip}</div>
       </div>
       <div class="sb-logout"><button onclick="logout()">🚪 Log Keluar</button></div>
     </aside>
