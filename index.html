@@ -76,6 +76,16 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 .sb-logout{margin-top:auto;padding-top:16px;}
 .sb-logout button{width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.2);padding:10px;border-radius:10px;font-size:12.5px;font-weight:700;}
 .sb-logout button:hover{background:rgba(255,255,255,.15);}
+.sb-quote-card{margin-top:16px;background:linear-gradient(160deg,#0F5233 0%,#0A3A26 100%);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px 14px 16px;position:relative;overflow:hidden;}
+.sb-quote-head{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.75);cursor:pointer;position:relative;z-index:2;}
+.sb-quote-head .q{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+.sb-quote-scene{position:relative;height:64px;margin:10px 0 4px;}
+.sb-quote-moon{position:absolute;top:0;right:8px;font-size:15px;opacity:.9;}
+.sb-quote-star{position:absolute;font-size:8px;color:rgba(255,255,255,.55);}
+.sb-quote-mosque{position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:34px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35));}
+.sb-quote-book{position:absolute;bottom:-2px;left:8px;font-size:16px;opacity:.9;}
+.sb-quote-leaf{position:absolute;bottom:-2px;right:6px;font-size:16px;opacity:.85;}
+.sb-quote-text{font-size:11px;line-height:1.55;color:rgba(255,255,255,.85);font-style:italic;text-align:center;position:relative;z-index:2;padding:0 2px;}
 .sb-toggle{display:none;}
 .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
 .topbar .tb-user{background:var(--kad);border:1px solid var(--garis);color:var(--tulisan);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:20px;white-space:nowrap;margin-left:auto;}
@@ -578,6 +588,19 @@ function appShell(activeKey, innerHTML){
     <aside class="sidebar no-print" id="appSidebar">
       <div class="sb-brand"><span class="mark">📗</span><span class="txt">Sistem Perekodan<br>PBD Pendidikan Islam</span></div>
       ${navHTML}
+      <div class="sb-quote-card">
+        <div class="sb-quote-head"><span class="q">?</span> Bantuan</div>
+        <div class="sb-quote-scene">
+          <span class="sb-quote-moon">🌙</span>
+          <span class="sb-quote-star" style="top:4px;left:14px;">✦</span>
+          <span class="sb-quote-star" style="top:16px;left:34px;">✦</span>
+          <span class="sb-quote-star" style="top:2px;left:60px;">✦</span>
+          <span class="sb-quote-book">📖</span>
+          <span class="sb-quote-leaf">🌿</span>
+          <span class="sb-quote-mosque">🕌</span>
+        </div>
+        <div class="sb-quote-text">"Ilmu itu cahaya, amal itu bekal,<br>akhlak itu mahkota."</div>
+      </div>
       <div class="sb-logout"><button onclick="logout()">🚪 Log Keluar</button></div>
     </aside>
     <main class="main-area">
@@ -1437,9 +1460,6 @@ async function paintDashboard(){
   });
   const tpCounts=[0,0,0,0,0,0];
   activeStudents.forEach(s=> tpCounts[tpOf(s)-1]++);
-  const list = activeStudents.filter(s=> cls==='ALL' || s.class===cls);
-  const opts = ['ALL',...DB.meta.classes].map(c=>`<option value="${c}" ${c===cls?'selected':''}>${c==='ALL'?'Semua Kelas':c}</option>`).join('');
-  const cards = list.map(s=> studentProgressCardHTML(s)).join('');
   const totalEvidence = activeStudents.reduce((a,s)=>a+s._evidence.length,0);
   const verifiedCount = activeStudents.filter(s=>DB.verifiedAll[s.id]).length;
   const noEvidence = activeStudents.filter(s=> s._evidence.length===0);
@@ -1580,13 +1600,13 @@ async function paintDashboard(){
     </div>
     <div class="section-head"><h2>Taburan TP Keseluruhan</h2></div>
     <div class="card"><canvas id="tpDistChart" height="85"></canvas></div>
-    <div class="section-head"><h2>Senarai Murid</h2></div>
-    <div class="toolbar"><select id="guruClassFilter">${opts}</select></div>
-    <div class="student-list">${cards || '<div class="empty"><div class="em-ic">🎓</div>Tiada murid dalam kelas ini.</div>'}</div>
+    <div class="card" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div><b style="color:var(--hijau-gelap);">🎓 Nak lihat senarai penuh & kemajuan setiap murid?</b><br><span style="font-size:12.5px;color:var(--tulisan-lembut);">Lengkap dengan penapis kelas dan carian nama.</span></div>
+      <button class="btn gold" onclick="navigateShared('murid')">Buka Urus Murid →</button>
+    </div>
   `;
   el.innerHTML = appShell('dash', content);
   wireShellNav(navigateShared);
-  document.getElementById('guruClassFilter').onchange=(e)=>{VIEW.classFilter=e.target.value; paintDashboard();};
   startLiveClock();
   new Chart(document.getElementById('classCompChart'), {
     type:'bar',
