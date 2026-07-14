@@ -60,34 +60,55 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 .login-err{color:var(--merah);font-size:13px;margin-top:10px;min-height:16px;font-weight:600;}
 .login-hint{margin-top:20px;font-size:11.5px;color:var(--tulisan-lembut);background:var(--krim);padding:12px 14px;border-radius:10px;line-height:1.7;border:1px dashed var(--garis);}
 
-/* TOP NAVBAR (matches Khatam Tracker style) */
-.topnav{background:var(--hijau);position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.08);}
-.topnav-row1{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 20px 8px;}
-.tn-brand{display:flex;align-items:center;gap:9px;min-width:0;}
-.tn-logo{font-size:19px;flex-shrink:0;}
-.tn-title{font-weight:800;font-size:15.5px;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tn-tabs-row{max-width:1280px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 20px 10px;}
-.tn-tabs-row::-webkit-scrollbar{display:none;}
-.tn-item{display:flex;align-items:center;gap:6px;white-space:nowrap;padding:8px 13px;border-radius:9px;border:none;background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);font-size:13px;font-weight:700;flex-shrink:0;border-bottom:2.5px solid transparent;}
-.tn-item span{font-size:14px;}
-.tn-item:hover{color:#fff;}
-.tn-item.active{color:#fff;background:rgba(255,255,255,.18);border-bottom-color:var(--emas);}
-.tn-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.tn-user{background:rgba(255,255,255,.14);color:#fff;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:20px;white-space:nowrap;}
-.tn-logout{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.3);padding:7px 13px;border-radius:20px;font-size:12.5px;font-weight:700;white-space:nowrap;}
-.tn-logout:hover{background:rgba(255,255,255,.2);}
-.main-area{flex:1;min-width:0;}
-.wrap{max-width:1180px;margin:0 auto;padding:22px 20px 60px;}
-@media(max-width:640px){
-  .topnav-row1{padding:10px 14px 8px;}
-  .tn-user{display:none;}
-  .tn-title{font-size:13.5px;}
+/* ============ APP SHELL — SIDEBAR LAYOUT ============ */
+.app-layout{display:flex;min-height:100vh;}
+.sidebar{width:250px;flex-shrink:0;background:linear-gradient(180deg,#123B29 0%,#0A2A1C 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;padding:20px 14px 24px;z-index:60;}
+.sidebar::-webkit-scrollbar{width:5px;}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
+.sb-brand{display:flex;align-items:center;gap:10px;padding:2px 6px 22px;}
+.sb-brand .mark{width:38px;height:38px;border-radius:11px;background:var(--emas);color:#3A2C0A;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sb-brand .txt{font-weight:800;font-size:13.5px;line-height:1.28;color:#fff;}
+.sb-group{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.4);font-weight:800;margin:16px 10px 6px;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:10px;color:rgba(255,255,255,.72);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left;transition:.15s;}
+.sb-item:hover{background:rgba(255,255,255,.08);color:#fff;}
+.sb-item.active{background:var(--emas);color:#3A2C0A;box-shadow:0 3px 10px rgba(0,0,0,.2);}
+.sb-item .ic{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.sb-logout{margin-top:auto;padding-top:16px;}
+.sb-logout button{width:100%;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.2);padding:10px;border-radius:10px;font-size:12.5px;font-weight:700;}
+.sb-logout button:hover{background:rgba(255,255,255,.15);}
+.sb-toggle{display:none;}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
+.topbar .tb-user{background:var(--kad);border:1px solid var(--garis);color:var(--tulisan);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:20px;white-space:nowrap;margin-left:auto;}
+.main-area{flex:1;min-width:0;background:var(--krim);}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 22px 60px;}
+@media(max-width:900px){
+  .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);transition:.2s;box-shadow:0 0 30px rgba(0,0,0,.3);}
+  .sidebar.open{transform:translateX(0);}
+  .sb-toggle{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:var(--kad);border:1px solid var(--garis);font-size:17px;flex-shrink:0;}
+  .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:55;}
+  .sb-overlay.open{display:block;}
   .wrap{padding:16px 14px 50px;}
-  .tn-tabs-row{padding:0 14px 9px;gap:5px;}
-  .tn-item{padding:7px 10px;font-size:12px;}
-  .tn-item span{font-size:13px;}
-  .tn-logout{padding:6px 10px;font-size:11.5px;}
+  .topbar .tb-user{display:none;}
 }
+
+/* Ring chart (peratus bulat) */
+.ring{width:56px;height:56px;border-radius:50%;background:conic-gradient(var(--ring-color,#1B7A4B) calc(var(--pct,0)*1%), #E6ECE6 0);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ring-inner{width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--hijau-gelap);}
+.ring.lg{width:88px;height:88px;}
+.ring.lg .ring-inner{width:68px;height:68px;font-size:17px;}
+
+/* Stat card v2 — icon bulat berwarna (macam rujukan) */
+.stat-card-v2{display:flex;align-items:center;gap:13px;background:var(--kad);border-radius:16px;padding:16px 16px;border:1px solid var(--garis);box-shadow:var(--shadow);}
+.stat-card-v2 .icon-box{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.stat-card-v2 .n{font-size:21px;font-weight:800;color:var(--hijau-gelap);line-height:1.15;}
+.stat-card-v2 .l{font-size:11px;color:var(--tulisan-lembut);font-weight:700;}
+.icon-box.c1{background:#E4F0E6;color:#1B7A4B;}
+.icon-box.c2{background:#FFF3D6;color:#A9832A;}
+.icon-box.c3{background:#FDEBE3;color:#C0663A;}
+.icon-box.c4{background:#EDE6FA;color:#7B4FC2;}
+.icon-box.c5{background:#E1F0F5;color:#2A7F9E;}
+.icon-box.c6{background:#FBEAE6;color:#C0463A;}
+
 
 /* HEADER / SCHOOL BANNER */
 .school-banner{background:linear-gradient(120deg,var(--hijau) 0%,var(--hijau-gelap) 100%);border-radius:var(--radius);padding:22px 26px;color:#fff;display:flex;align-items:center;gap:16px;margin-bottom:18px;}
@@ -108,7 +129,8 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 .stat-card .ic{font-size:24px;display:block;margin-bottom:6px;}
 .stat-card .n{font-size:28px;color:var(--hijau-gelap);font-weight:800;}
 .stat-card .l{font-size:11px;color:var(--tulisan-lembut);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:2px;}
-@media(max-width:640px){ .grid-cards{grid-template-columns:repeat(2,1fr);gap:9px;} .stat-card{padding:14px 8px;} .stat-card .n{font-size:22px;} .stat-card .ic{font-size:19px;} .stat-card .l{font-size:9.5px;} }
+@media(max-width:640px){ .grid-cards{grid-template-columns:repeat(2,1fr);gap:9px;} .stat-card{padding:14px 8px;} .stat-card .n{font-size:22px;} .stat-card .ic{font-size:19px;} .stat-card .l{font-size:9.5px;}
+  .stat-card-v2{padding:12px;gap:9px;} .stat-card-v2 .icon-box{width:38px;height:38px;font-size:16px;border-radius:11px;} .stat-card-v2 .n{font-size:17px;} .stat-card-v2 .l{font-size:9.5px;} }
 
 /* STUDENT LIST (guru dashboard) */
 .student-list{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
@@ -515,45 +537,68 @@ function renderLogin(){
 
 function logout(){ SESSION=null; localStorage.removeItem('pbd_session_user'); renderLogin(); }
 
-/* ============ APP SHELL (TOP NAVBAR) ============ */
+/* ============ APP SHELL (SIDEBAR GELAP) ============ */
 function appShell(activeKey, innerHTML){
   const isAdmin = SESSION.role==='admin';
-  const navItems = isAdmin ? [
-    {key:'dash', label:'Dashboard', icon:'🏠'},
-    {key:'guru', label:'Guru', icon:'👤'},
-    {key:'murid', label:'Murid', icon:'🎓'},
-    {key:'rekod', label:'Rekod', icon:'📝'},
-    {key:'tajuk', label:'Tajuk', icon:'📚'},
-    {key:'laporan', label:'Cetak Laporan', icon:'🖨️'},
-    {key:'rujukan', label:'Rujukan TP', icon:'📖'},
-    {key:'log', label:'Log', icon:'🗒️'},
-    {key:'selenggara', label:'Selenggara', icon:'⚙️'}
+  const navGroups = isAdmin ? [
+    {label:'UTAMA', items:[{key:'dash', label:'Dashboard', icon:'🏠'}]},
+    {label:'PENGURUSAN', items:[
+      {key:'guru', label:'Guru', icon:'👤'},
+      {key:'murid', label:'Murid', icon:'🎓'},
+      {key:'rekod', label:'Rekod', icon:'📝'},
+      {key:'tajuk', label:'Tajuk', icon:'📚'}
+    ]},
+    {label:'LAPORAN', items:[
+      {key:'laporan', label:'Cetak Laporan', icon:'🖨️'},
+      {key:'rujukan', label:'Rujukan TP', icon:'📖'}
+    ]},
+    {label:'SISTEM', items:[
+      {key:'log', label:'Log', icon:'🗒️'},
+      {key:'selenggara', label:'Selenggara', icon:'⚙️'}
+    ]}
   ] : [
-    {key:'dash', label:'Dashboard', icon:'🏠'},
-    {key:'murid', label:'Murid', icon:'🎓'},
-    {key:'rekod', label:'Rekod', icon:'📝'},
-    {key:'tajuk', label:'Tajuk', icon:'📚'},
-    {key:'laporan', label:'Cetak Laporan', icon:'🖨️'},
-    {key:'rujukan', label:'Rujukan TP', icon:'📖'}
+    {label:'UTAMA', items:[{key:'dash', label:'Dashboard', icon:'🏠'}]},
+    {label:'PENGAJARAN', items:[
+      {key:'murid', label:'Murid', icon:'🎓'},
+      {key:'rekod', label:'Rekod', icon:'📝'},
+      {key:'tajuk', label:'Tajuk', icon:'📚'}
+    ]},
+    {label:'LAPORAN', items:[
+      {key:'laporan', label:'Cetak Laporan', icon:'🖨️'},
+      {key:'rujukan', label:'Rujukan TP', icon:'📖'}
+    ]}
   ];
+  const navHTML = navGroups.map(g=>`
+    <div class="sb-group">${g.label}</div>
+    ${g.items.map(n=>`<button class="sb-item ${activeKey===n.key?'active':''}" data-k="${n.key}"><span class="ic">${n.icon}</span>${n.label}</button>`).join('')}
+  `).join('');
   return `
-  <header class="topnav no-print">
-    <div class="topnav-row1">
-      <div class="tn-brand"><span class="tn-logo">📗</span><span class="tn-title">Perekodan PBD Pendidikan Islam</span></div>
-      <div class="tn-right">
-        <span class="tn-user">${SESSION.name}</span>
-        <button class="tn-logout" onclick="logout()">Log Keluar</button>
+  <div class="app-layout">
+    <div class="sb-overlay no-print" id="sbOverlay" onclick="toggleSidebar(false)"></div>
+    <aside class="sidebar no-print" id="appSidebar">
+      <div class="sb-brand"><span class="mark">📗</span><span class="txt">Sistem Perekodan<br>PBD Pendidikan Islam</span></div>
+      ${navHTML}
+      <div class="sb-logout"><button onclick="logout()">🚪 Log Keluar</button></div>
+    </aside>
+    <main class="main-area">
+      <div class="wrap">
+        <div class="topbar no-print">
+          <button class="sb-toggle" onclick="toggleSidebar(true)">☰</button>
+          <span class="tb-user">👤 ${SESSION.name}</span>
+        </div>
+        ${innerHTML}
       </div>
-    </div>
-    <nav class="tn-tabs-row">
-      ${navItems.map(n=>`<button class="tn-item ${activeKey===n.key?'active':''}" data-k="${n.key}"><span>${n.icon}</span>${n.label}</button>`).join('')}
-    </nav>
-  </header>
-  <main class="main-area"><div class="wrap">${innerHTML}</div></main>`;
+    </main>
+  </div>`;
+}
+function toggleSidebar(open){
+  const sb = document.getElementById('appSidebar'), ov = document.getElementById('sbOverlay');
+  if(sb) sb.classList.toggle('open', open);
+  if(ov) ov.classList.toggle('open', open);
 }
 function wireShellNav(handler){
-  document.querySelectorAll('.tn-item').forEach(b=>{
-    b.onclick=()=>handler(b.dataset.k);
+  document.querySelectorAll('.sb-item').forEach(b=>{
+    b.onclick=()=>{ toggleSidebar(false); handler(b.dataset.k); };
   });
 }
 
@@ -1414,14 +1459,16 @@ async function paintDashboard(){
   });
   const topClass = classStats.filter(c=>c.studentCount>0).sort((a,b)=>b.pct-a.pct)[0];
 
-  const classProgressRows = classStats.map(c=>`
-    <div class="student-row" style="cursor:pointer;" onclick="VIEW.classFilter='${c.name}';paintDashboard();">
-      <div class="sc-top"><div class="sc-avatar">🏫</div>
-        <div><div class="sc-name">${c.name}</div><div class="sc-class">${c.studentCount} murid</div></div>
-        <div class="sc-right"><b style="color:var(--hijau-gelap);font-size:15px;">${c.pct}%</b><div class="sc-ev">${c.actual} / ${c.expected}</div></div>
+  const classProgressRows = classStats.map(c=>{
+    const ringColor = c.pct<40?'#C0463A':c.pct<70?'#A9832A':'#1B7A4B';
+    return `<div class="student-row" style="cursor:pointer;display:flex;align-items:center;gap:14px;" onclick="VIEW.classFilter='${c.name}';paintDashboard();">
+      <div class="ring" style="--pct:${c.pct};--ring-color:${ringColor};"><div class="ring-inner">${c.pct}%</div></div>
+      <div style="flex:1;min-width:0;">
+        <div class="sc-name">${c.name}</div>
+        <div class="sc-class">${c.studentCount} murid &middot; ${c.actual} / ${c.expected} eviden</div>
       </div>
-      <div class="sc-bar-track"><div class="sc-bar-fill" style="width:${c.pct}%;background:${c.pct<40?'var(--merah)':c.pct<70?'var(--emas)':'var(--hijau)'}"></div></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   /* ---- Tajuk paling ramai belum hantar ---- */
   const topicGaps = [];
@@ -1453,13 +1500,6 @@ async function paintDashboard(){
   const trendData = last6Weeks.length? last6Weeks.map(w=>weekBuckets[w]) : [0];
   const thisWeekCount = last6Weeks.length? weekBuckets[last6Weeks[last6Weeks.length-1]] : 0;
 
-  /* ---- Aktiviti terkini ---- */
-  const activityRows = (DB.activityLog||[]).slice(0,6).map(l=>`
-    <div class="ev-item" style="padding:8px 0;">
-      <div class="sc-avatar" style="width:30px;height:30px;font-size:13px;">📌</div>
-      <div class="ev-info"><div class="t" style="font-size:12.5px;"><b>${l.action}</b>${l.detail?' — '+l.detail:''}</div><div class="d">${relTime(l.ts)}</div></div>
-    </div>`).join('') || '<div class="empty" style="padding:16px;"><div class="em-ic">🗒️</div>Tiada aktiviti direkod lagi.</div>';
-
   /* ---- Peringatan ---- */
   const today = new Date();
   const upcomingReminders = (DB.reminders||[]).filter(r=>{ const d=new Date(r.date); const diff=Math.ceil((d-today)/(1000*60*60*24)); return diff>=-1 && diff<=7; }).sort((a,b)=>new Date(a.date)-new Date(b.date));
@@ -1490,12 +1530,12 @@ async function paintDashboard(){
       <div class="sb-clock" id="liveClock"><div class="sb-clock-time" id="liveClockTime">--:--:--</div><div class="sb-clock-date" id="liveClockDate">—</div></div>
     </div>
     <div class="grid-cards">
-      <div class="stat-card"><span class="ic">🎓</span><div class="n">${activeStudents.length}</div><div class="l">Jumlah Murid</div></div>
-      <div class="stat-card"><span class="ic">🏫</span><div class="n">${DB.meta.classes.length}</div><div class="l">Kelas</div></div>
-      <div class="stat-card"><span class="ic">📎</span><div class="n">${totalEvidence}</div><div class="l">Eviden Dihantar</div></div>
-      <div class="stat-card"><span class="ic">⏳</span><div class="n">${noEvidence.length}</div><div class="l">Belum Ada Eviden</div></div>
-      <div class="stat-card"><span class="ic">✅</span><div class="n">${verifiedCount}</div><div class="l">Telah Disahkan</div></div>
-      <div class="stat-card"><span class="ic">⭐</span><div class="n">${avgTP}</div><div class="l">Purata TP</div></div>
+      <div class="stat-card-v2"><span class="icon-box c1">🎓</span><div><div class="n">${activeStudents.length}</div><div class="l">Jumlah Murid</div></div></div>
+      <div class="stat-card-v2"><span class="icon-box c5">🏫</span><div><div class="n">${DB.meta.classes.length}</div><div class="l">Kelas</div></div></div>
+      <div class="stat-card-v2"><span class="icon-box c2">📎</span><div><div class="n">${totalEvidence}</div><div class="l">Eviden Dihantar</div></div></div>
+      <div class="stat-card-v2"><span class="icon-box c3">⏳</span><div><div class="n">${noEvidence.length}</div><div class="l">Belum Ada Eviden</div></div></div>
+      <div class="stat-card-v2"><span class="icon-box c4">✅</span><div><div class="n">${verifiedCount}</div><div class="l">Telah Disahkan</div></div></div>
+      <div class="stat-card-v2"><span class="icon-box c1">⭐</span><div><div class="n">${avgTP}</div><div class="l">Purata TP</div></div></div>
     </div>
     <div class="two-col">
       <div class="card">
@@ -1507,16 +1547,15 @@ async function paintDashboard(){
         <canvas id="classCompChart" height="180"></canvas>
       </div>
     </div>
-    <div class="three-col">
-      ${topClass ? `<div class="card" style="background:linear-gradient(120deg,var(--emas-l),#fff);border:1px solid var(--emas);">
-        <h2 style="margin-top:0;">🏆 Kelas Terbaik</h2>
-        <div style="font-size:22px;font-weight:800;color:var(--hijau-gelap);">${topClass.name}</div>
-        <div style="font-size:13px;color:var(--tulisan-lembut);margin-top:2px;">Pencapaian eviden: <b style="color:var(--hijau);">${topClass.pct}%</b> &middot; Purata TP: ${topClass.avgTPc}</div>
+    <div class="two-col">
+      ${topClass ? `<div class="card" style="background:linear-gradient(120deg,var(--emas-l),#fff);border:1px solid var(--emas);display:flex;align-items:center;gap:16px;">
+        <div class="ring lg" style="--pct:${topClass.pct};--ring-color:#A9832A;"><div class="ring-inner">${topClass.pct}%</div></div>
+        <div>
+          <h2 style="margin:0 0 4px;">🏆 Kelas Terbaik</h2>
+          <div style="font-size:20px;font-weight:800;color:var(--hijau-gelap);">${topClass.name}</div>
+          <div style="font-size:12.5px;color:var(--tulisan-lembut);margin-top:2px;">Purata TP: ${topClass.avgTPc}</div>
+        </div>
       </div>` : '<div class="card"><h2 style="margin-top:0;">🏆 Kelas Terbaik</h2><div class="empty" style="padding:8px 0;">Tiada data lagi.</div></div>'}
-      <div class="card">
-        <h2 style="margin-top:0;">🗒️ Aktiviti Terkini</h2>
-        ${activityRows}
-      </div>
       <div class="card">
         <h2 style="margin-top:0;">🔔 Peringatan</h2>
         ${alertHTML}
