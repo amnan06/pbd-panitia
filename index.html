@@ -122,6 +122,12 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 .sc-ev{font-size:11px;color:var(--tulisan-lembut);}
 .sc-bar-track{height:6px;background:var(--garis);border-radius:4px;margin-top:10px;overflow:hidden;}
 .sc-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--hijau),var(--hijau-2));}
+.prog-ascii{font-family:'Courier New',monospace;font-size:11px;letter-spacing:-.5px;color:var(--hijau-gelap);margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prog-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;}
+.prog-stat{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+.prog-stat.lengkap{background:#E4F0E6;color:var(--hijau-ok,#1B7A4B);}
+.prog-stat.semak{background:#FFF3D6;color:#A9832A;}
+.prog-stat.belum{background:#F1F1F1;color:#8A8A8A;}
 
 /* TABLES (admin) */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
@@ -983,7 +989,16 @@ function adminMuridHTML(){
     const idx = DB.students.indexOf(s);
     const g = studentGender(s);
     const gLabel = g==='P' ? '🧕🏻 Perempuan' : g==='L' ? '👦🏻 Lelaki' : '—';
+    const p = studentTopicProgress(s);
     return `<tr><td><div class="trow"><div class="mini-avatar">${initials(s.name)}</div><b>${s.name}</b></div></td><td>${s.class}</td>
+    <td style="min-width:190px;">
+      <div class="prog-ascii" style="margin:0;font-size:10.5px;">${asciiBar(p.pct,12)} ${p.pct}%</div>
+      <div class="prog-stats" style="margin-top:5px;">
+        <span class="prog-stat lengkap">✅ ${p.lengkap}/${p.topicsTotal}</span>
+        <span class="prog-stat semak">🕓 ${p.sedangDisemak}</span>
+        <span class="prog-stat belum">⭕ ${p.belumHantar}</span>
+      </div>
+    </td>
     <td style="white-space:nowrap;">${gLabel}</td>
     <td><span class="pill" style="background:#E4F0E6;color:var(--hijau-ok);">🟢 Aktif</span></td>
     <td class="row-actions"><button class="btn ghost" onclick="editStudent(${idx})">Edit</button>
@@ -1002,8 +1017,8 @@ function adminMuridHTML(){
       <button class="btn ghost" onclick="openImportCSVModal()">⬆ Import CSV</button>
       <button class="btn ghost" onclick="navigateShared('sampah')">🗑️ Tong Sampah ${trashCount>0?'('+trashCount+')':''}</button>
     </div>
-    <div class="table-scroll"><table><thead><tr><th>Nama</th><th>Kelas</th><th>Jantina</th><th>Status</th><th></th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="5"><div class="empty"><div class="em-ic">🎓</div>Tiada murid dalam kelas ini.</div></td></tr>'}</tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th>Nama</th><th>Kelas</th><th>Kemajuan</th><th>Jantina</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="6"><div class="empty"><div class="em-ic">🎓</div>Tiada murid dalam kelas ini.</div></td></tr>'}</tbody></table></div>
   </div>
   <div class="card" style="margin-top:16px;">
     <h2 style="margin-top:0;">Kelas (${DB.meta.classes.length})</h2>
@@ -1327,6 +1342,43 @@ function isoWeekLabel(dateStr){
   const week = 1+Math.round(diff/(7*24*60*60*1000));
   return 'Minggu '+week;
 }
+function asciiBar(pct, len){
+  len = len || 16;
+  const filled = Math.max(0, Math.min(len, Math.round(pct/100*len)));
+  return '█'.repeat(filled) + '░'.repeat(len-filled);
+}
+// Kira status kemajuan murid berasaskan tajuk (bukan setakat TP semata-mata)
+function studentTopicProgress(s){
+  const year = yearOfClass(s.class);
+  const topics = DB.meta.topics[year] || [];
+  const topicsTotal = topics.length;
+  const ev = s._evidence || (DB.evidenceAll[s.id]||[]).filter(e=>!e.deleted);
+  const topicsWithEvidence = topics.filter(t=> ev.some(e=>e.topic===t)).length;
+  const verified = !!DB.verifiedAll[s.id];
+  const lengkap = verified ? topicsWithEvidence : 0;
+  const sedangDisemak = verified ? 0 : topicsWithEvidence;
+  const belumHantar = Math.max(0, topicsTotal - topicsWithEvidence);
+  const pct = topicsTotal>0 ? Math.round((topicsWithEvidence/topicsTotal)*100) : 0;
+  return {topicsTotal, topicsWithEvidence, lengkap, sedangDisemak, belumHantar, pct, verified};
+}
+function studentProgressCardHTML(s){
+  const p = studentTopicProgress(s);
+  const tp = tpOf(s);
+  const barColor = p.pct<40?'var(--merah)':p.pct<70?'var(--emas)':'var(--hijau)';
+  return `<div class="student-row" onclick="openStudent('${s.id}')">
+    <div class="sc-top"><div class="sc-avatar">${initials(s.name)}</div>
+      <div><div class="sc-name">${s.name.toUpperCase()}</div><div class="sc-class">${s.class}</div></div>
+      <div class="sc-right"><span class="pill tp${tp}">TP${tp}</span><div class="sc-ev">${p.pct}%</div></div>
+    </div>
+    <div class="sc-bar-track"><div class="sc-bar-fill" style="width:${p.pct}%;background:${barColor}"></div></div>
+    <div class="prog-ascii">${asciiBar(p.pct)} ${p.pct}%</div>
+    <div class="prog-stats">
+      <span class="prog-stat lengkap">✅ ${p.lengkap}/${p.topicsTotal} Lengkap</span>
+      <span class="prog-stat semak">🕓 ${p.sedangDisemak} Sedang Disemak</span>
+      <span class="prog-stat belum">⭕ ${p.belumHantar} Belum Hantar</span>
+    </div>
+  </div>`;
+}
 async function paintDashboard(){
   const isAdmin = SESSION.role==='admin';
   VIEW.page = isAdmin ? 'admin' : 'guru';
@@ -1342,18 +1394,7 @@ async function paintDashboard(){
   activeStudents.forEach(s=> tpCounts[tpOf(s)-1]++);
   const list = activeStudents.filter(s=> cls==='ALL' || s.class===cls);
   const opts = ['ALL',...DB.meta.classes].map(c=>`<option value="${c}" ${c===cls?'selected':''}>${c==='ALL'?'Semua Kelas':c}</option>`).join('');
-  const cards = list.map(s=>{
-    const tp = tpOf(s);
-    const pct = Math.round((tp/6)*100);
-    const barColor = tp<=2?'var(--merah)':tp<=4?'var(--emas)':'var(--hijau)';
-    return `<div class="student-row" onclick="openStudent('${s.id}')">
-      <div class="sc-top"><div class="sc-avatar">${initials(s.name)}</div>
-        <div><div class="sc-name">${s.name.toUpperCase()}</div><div class="sc-class">${s.class}</div></div>
-        <div class="sc-right"><span class="pill tp${tp}">TP${tp}</span><div class="sc-ev">${s._evidence.length} eviden</div></div>
-      </div>
-      <div class="sc-bar-track"><div class="sc-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
-    </div>`;
-  }).join('');
+  const cards = list.map(s=> studentProgressCardHTML(s)).join('');
   const totalEvidence = activeStudents.reduce((a,s)=>a+s._evidence.length,0);
   const verifiedCount = activeStudents.filter(s=>DB.verifiedAll[s.id]).length;
   const noEvidence = activeStudents.filter(s=> s._evidence.length===0);
