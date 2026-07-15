@@ -14,9 +14,26 @@
   --krim:#F4F6FA; --kad:#FFFFFF; --tulisan:#1E2530; --tulisan-lembut:#66707F;
   --garis:#E4E8F0; --merah:#C0463A; --hijau-ok:#2E8B57;
   --radius:14px; --shadow:0 2px 10px rgba(10,25,50,.07); --shadow-lg:0 12px 34px rgba(10,25,50,.15);
+  --tint-warn:#FFFDF7; --tint-info:#F7F9FC; --tint-trend:#F6FAF7; --tint-neutral:rgba(10,25,50,.03); --ring-bg:#fff;
+  --brand-deep:#0A1B33;
+}
+[data-theme="dark"]{
+  --krim:#0F1522; --kad:#171F30; --tulisan:#E8ECF3; --tulisan-lembut:#8B95A8;
+  --garis:#2A3348; --shadow:0 2px 10px rgba(0,0,0,.35); --shadow-lg:0 12px 34px rgba(0,0,0,.5);
+  --hijau:#2A4A7F; --hijau-2:#3A5D99; --hijau-gelap:#F3E3B8;
+  --merah:#E57373; --hijau-ok:#4CAF7D;
+  --tint-warn:rgba(212,167,59,.08); --tint-info:rgba(74,109,163,.12); --tint-trend:rgba(76,175,125,.08); --tint-neutral:rgba(255,255,255,.06); --ring-bg:#171F30;
 }
 *{box-sizing:border-box;}
 body{margin:0;background:var(--krim);color:var(--tulisan);font-family:'Inter',sans-serif;font-size:15px;}
+.boot-loader{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,var(--hijau) 0%,var(--brand-deep) 100%);}
+.boot-mark{width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:30px;}
+.boot-spinner{width:30px;height:30px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--emas);border-radius:50%;animation:boot-spin .8s linear infinite;}
+@keyframes boot-spin{to{transform:rotate(360deg);}}
+.boot-txt{color:#fff;font-weight:800;font-size:14.5px;text-align:center;padding:0 20px;}
+.boot-sub{color:rgba(255,255,255,.6);font-size:12px;}
+.skel{background:linear-gradient(90deg,var(--garis) 25%,#EEF1F6 37%,var(--garis) 63%);background-size:400% 100%;animation:skel-shine 1.4s ease infinite;border-radius:10px;}
+@keyframes skel-shine{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
 h1,h2,h3,.display{font-family:'Inter',sans-serif;font-weight:800;color:var(--hijau-gelap);letter-spacing:-.01em;}
 .eyebrow{font-family:'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;font-size:11px;color:var(--emas-d);font-weight:700;}
 button{font-family:'Inter',sans-serif;cursor:pointer;}
@@ -62,7 +79,7 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 
 /* ============ APP SHELL — SIDEBAR LAYOUT ============ */
 .app-layout{display:flex;min-height:100vh;}
-.sidebar{width:250px;flex-shrink:0;background:linear-gradient(180deg,var(--hijau) 0%,var(--hijau-gelap) 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 14px calc(24px + env(safe-area-inset-bottom, 0px));z-index:60;}
+.sidebar{width:250px;flex-shrink:0;background:linear-gradient(180deg,var(--hijau) 0%,var(--brand-deep) 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 14px calc(24px + env(safe-area-inset-bottom, 0px));z-index:60;}
 .sidebar::-webkit-scrollbar{width:5px;}
 .sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
 .sb-brand{display:flex;align-items:center;gap:10px;padding:2px 6px 22px;}
@@ -75,7 +92,7 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 .sb-item .ic{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
 .tb-logout{background:var(--kad);border:1px solid var(--garis);color:var(--merah);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:20px;white-space:nowrap;cursor:pointer;}
 .tb-logout:hover{background:#FBEAE6;}
-.sb-quote-card{margin-top:16px;background:linear-gradient(160deg,var(--hijau-2) 0%,var(--hijau-gelap) 100%);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:15px 15px 16px;}
+.sb-quote-card{margin-top:16px;background:linear-gradient(160deg,var(--hijau-2) 0%,var(--brand-deep) 100%);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:15px 15px 16px;}
 .sb-quote-no{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.4);font-weight:700;}
 .sb-quote-title{font-size:12.5px;font-weight:800;color:var(--emas);margin:5px 0 8px;line-height:1.35;}
 .sb-quote-text{font-size:11.5px;font-style:italic;color:rgba(255,255,255,.88);line-height:1.55;}
@@ -85,7 +102,7 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 .mini-tab.active{background:var(--hijau);color:#fff;border-color:var(--hijau);}
 .sb-toggle{display:none;}
 .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
-.topbar .tb-user{background:var(--kad);border:1px solid var(--garis);color:var(--tulisan);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:20px;white-space:nowrap;margin-left:auto;}
+.topbar .tb-user{background:var(--kad);border:1px solid var(--garis);color:var(--tulisan);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:20px;white-space:nowrap;}
 .main-area{flex:1;min-width:0;background:var(--krim);}
 .wrap{max-width:1180px;margin:0 auto;padding:20px 22px 60px;}
 @media(max-width:900px){
@@ -107,7 +124,7 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 
 /* Ring chart (peratus bulat) */
 .ring{width:56px;height:56px;border-radius:50%;background:conic-gradient(var(--ring-color,#1B7A4B) calc(var(--pct,0)*1%), #E6ECE6 0);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ring-inner{width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--hijau-gelap);}
+.ring-inner{width:42px;height:42px;border-radius:50%;background:var(--ring-bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--hijau-gelap);}
 .ring.lg{width:88px;height:88px;}
 .ring.lg .ring-inner{width:68px;height:68px;font-size:17px;}
 
@@ -120,7 +137,7 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 .thin-bar-track{height:4px;background:var(--garis);border-radius:3px;margin-top:6px;overflow:hidden;}
 .thin-bar-fill{height:100%;border-radius:3px;}
 .mini-stat-row{display:flex;gap:8px;margin-top:12px;}
-.mini-stat-box{flex:1;background:rgba(10,25,50,.03);border-radius:9px;padding:8px 6px;text-align:center;}
+.mini-stat-box{flex:1;background:var(--tint-neutral);border-radius:9px;padding:8px 6px;text-align:center;}
 .mini-stat-box .v{font-size:15px;font-weight:800;color:var(--hijau-gelap);line-height:1.2;}
 .mini-stat-box .k{font-size:9.5px;color:var(--tulisan-lembut);font-weight:700;margin-top:2px;}
 .icon-box.c1{background:#E4F0E6;color:#1B7A4B;}
@@ -132,7 +149,7 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 
 
 /* HEADER / SCHOOL BANNER */
-.school-banner{background:linear-gradient(120deg,var(--hijau) 0%,var(--hijau-gelap) 100%);border-radius:var(--radius);padding:22px 26px;color:#fff;display:flex;align-items:center;gap:16px;margin-bottom:18px;}
+.school-banner{background:linear-gradient(120deg,var(--hijau) 0%,var(--brand-deep) 100%);border-radius:var(--radius);padding:22px 26px;color:#fff;display:flex;align-items:center;gap:16px;margin-bottom:18px;}
 .school-banner .sb-emoji{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
 .school-banner .sb-name{font-size:19px;font-weight:800;color:#fff;}
 .school-banner .sb-meta{font-size:12.5px;color:rgba(255,255,255,.75);margin-top:2px;}
@@ -205,7 +222,7 @@ tr:hover td{background:#F5F9F5;}
 .toast.err{background:var(--merah);}
 
 /* STUDENT PROFILE */
-.profile-banner{background:linear-gradient(120deg,var(--hijau) 0%,var(--hijau-gelap) 100%);border-radius:var(--radius);padding:24px 26px;color:#fff;}
+.profile-banner{background:linear-gradient(120deg,var(--hijau) 0%,var(--brand-deep) 100%);border-radius:var(--radius);padding:24px 26px;color:#fff;}
 .profile-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;}
 .profile-id{display:flex;align-items:center;gap:14px;}
 .pf-avatar{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.35);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0;}
@@ -255,7 +272,14 @@ tr:hover td{background:#F5F9F5;}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app">
+  <div class="boot-loader">
+    <div class="boot-mark">📗</div>
+    <div class="boot-spinner"></div>
+    <div class="boot-txt">Sistem Perekodan PBD Pendidikan Islam</div>
+    <div class="boot-sub">Memuatkan data...</div>
+  </div>
+</div>
 <div id="printArea"></div>
 
 <script>
@@ -657,6 +681,7 @@ function appShell(activeKey, innerHTML){
       <div class="wrap">
         <div class="topbar no-print">
           <button class="sb-toggle" onclick="toggleSidebar(true)">☰</button>
+          <button class="tb-logout" onclick="toggleTheme()" title="Tukar Tema" style="color:var(--tulisan);margin-left:auto;">${document.documentElement.getAttribute('data-theme')==='dark'?'☀️':'🌙'} <span class="tb-logout-txt">Tema</span></button>
           <span class="tb-user" style="display:flex;align-items:center;gap:8px;">${avatarFor(SESSION,26)}${SESSION.name}</span>
           <button class="tb-logout" onclick="logout()" title="Log Keluar">🚪 <span class="tb-logout-txt">Log Keluar</span></button>
         </div>
@@ -1649,17 +1674,17 @@ async function paintDashboard(){
         <div class="mini-tabs">${classTabsHTML}</div>
         <div class="student-list">${classPanelsHTML || '<div class="empty"><div class="em-ic">🏫</div>Tiada kelas didaftarkan.</div>'}</div>
       </div>
-      <div class="card" style="background:#FFFDF7;">
+      <div class="card" style="background:var(--tint-warn);">
         <h2 style="margin-top:0;">🔔 Peringatan</h2>
         ${alertHTML}
       </div>
     </div>
     <div class="two-col" style="align-items:start;margin-top:28px;">
-      <div class="card" style="background:#F7F9FC;">
+      <div class="card" style="background:var(--tint-info);">
         <h2 style="margin-top:0;">Perbandingan Pencapaian Kelas</h2>
         <canvas id="classCompChart" height="140"></canvas>
       </div>
-      ${topClass ? `<div class="card" style="background:#F7F9FC;position:relative;overflow:hidden;padding:16px 18px;">
+      ${topClass ? `<div class="card" style="background:var(--tint-info);position:relative;overflow:hidden;padding:16px 18px;">
         <h2 style="margin:0 0 10px;font-size:14px;">Kelas Terbaik 🏆</h2>
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="font-size:32px;line-height:1;flex-shrink:0;">🏅</div>
@@ -1674,12 +1699,12 @@ async function paintDashboard(){
           <div class="mini-stat-box"><div class="v">${topClass.actual}</div><div class="k">EVIDEN</div></div>
           <div class="mini-stat-box"><div class="v">${topClass.avgTPc}</div><div class="k">PURATA TP</div></div>
         </div>
-      </div>` : '<div class="card" style="background:#F7F9FC;"><h2 style="margin-top:0;font-size:14px;">Kelas Terbaik 🏆</h2><div class="empty" style="padding:8px 0;">Tiada data lagi.</div></div>'}
+      </div>` : '<div class="card" style="background:var(--tint-info);"><h2 style="margin-top:0;font-size:14px;">Kelas Terbaik 🏆</h2><div class="empty" style="padding:8px 0;">Tiada data lagi.</div></div>'}
     </div>
     <div class="section-head"><h2>📚 Tajuk Paling Ramai Belum Hantar</h2></div>
     <div class="card">${topicGapRows}</div>
     <div class="two-col">
-      <div class="card" style="background:#F6FAF7;">
+      <div class="card" style="background:var(--tint-trend);">
         <h2 style="margin-top:0;">Trend Penghantaran (${last6Weeks.length||1} Minggu Terkini)</h2>
         <canvas id="trendChart" height="100"></canvas>
       </div>
@@ -1706,7 +1731,7 @@ async function paintDashboard(){
       </div>
     </div>
     <div class="section-head"><h2>Taburan TP Keseluruhan</h2></div>
-    <div class="card" style="background:#F7F9FC;"><canvas id="tpDistChart" height="65"></canvas></div>
+    <div class="card" style="background:var(--tint-info);"><canvas id="tpDistChart" height="65"></canvas></div>
     <div class="card" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
       <div><b style="color:var(--hijau-gelap);">🎓 Nak lihat senarai penuh & kemajuan setiap murid?</b><br><span style="font-size:12.5px;color:var(--tulisan-lembut);">Lengkap dengan penapis kelas dan carian nama.</span></div>
       <button class="btn gold" onclick="navigateShared('murid')">Buka Urus Murid →</button>
@@ -2339,6 +2364,23 @@ function showModal(html){
   document.body.appendChild(bg);
 }
 function closeModal(){ const m=document.getElementById('modalBg'); if(m) m.remove(); }
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  try{ localStorage.setItem('pbd_theme', theme); }catch(e){}
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur==='dark' ? 'light' : 'dark');
+  if(VIEW && VIEW.page==='admin') renderAdmin();
+  else if(VIEW && VIEW.page==='guru') renderGuru();
+}
+(function initTheme(){
+  try{
+    const saved = localStorage.getItem('pbd_theme');
+    if(saved) document.documentElement.setAttribute('data-theme', saved);
+  }catch(e){}
+})();
 
 boot();
 </script>
