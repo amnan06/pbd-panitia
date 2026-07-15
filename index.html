@@ -62,7 +62,7 @@ label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;m
 
 /* ============ APP SHELL — SIDEBAR LAYOUT ============ */
 .app-layout{display:flex;min-height:100vh;}
-.sidebar{width:250px;flex-shrink:0;background:linear-gradient(180deg,var(--hijau) 0%,var(--hijau-gelap) 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;padding:20px 14px 24px;z-index:60;}
+.sidebar{width:250px;flex-shrink:0;background:linear-gradient(180deg,var(--hijau) 0%,var(--hijau-gelap) 100%);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 14px calc(24px + env(safe-area-inset-bottom, 0px));z-index:60;}
 .sidebar::-webkit-scrollbar{width:5px;}
 .sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
 .sb-brand{display:flex;align-items:center;gap:10px;padding:2px 6px 22px;}
@@ -1095,16 +1095,7 @@ function adminMuridHTML(){
     const idx = DB.students.indexOf(s);
     const g = studentGender(s);
     const gLabel = g==='P' ? '🧕🏻 Perempuan' : g==='L' ? '👦🏻 Lelaki' : '—';
-    const p = studentTopicProgress(s);
     return `<tr><td><div class="trow"><div class="mini-avatar">${initials(s.name)}</div><b>${s.name}</b></div></td><td>${s.class}</td>
-    <td style="min-width:190px;">
-      <div class="prog-ascii" style="margin:0;font-size:10.5px;">${asciiBar(p.pct,12)} ${p.pct}%</div>
-      <div class="prog-stats" style="margin-top:5px;">
-        <span class="prog-stat lengkap">✅ ${p.lengkap}/${p.topicsTotal}</span>
-        <span class="prog-stat semak">🕓 ${p.sedangDisemak}</span>
-        <span class="prog-stat belum">⭕ ${p.belumHantar}</span>
-      </div>
-    </td>
     <td style="white-space:nowrap;">${gLabel}</td>
     <td><span class="pill" style="background:#E4F0E6;color:var(--hijau-ok);">🟢 Aktif</span></td>
     <td class="row-actions"><button class="btn ghost" onclick="editStudent(${idx})">Edit</button>
@@ -1123,8 +1114,8 @@ function adminMuridHTML(){
       <button class="btn ghost" onclick="openImportCSVModal()">⬆ Import CSV</button>
       <button class="btn ghost" onclick="navigateShared('sampah')">🗑️ Tong Sampah ${trashCount>0?'('+trashCount+')':''}</button>
     </div>
-    <div class="table-scroll"><table><thead><tr><th>Nama</th><th>Kelas</th><th>Kemajuan</th><th>Jantina</th><th>Status</th><th></th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="6"><div class="empty"><div class="em-ic">🎓</div>Tiada murid dalam kelas ini.</div></td></tr>'}</tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th>Nama</th><th>Kelas</th><th>Jantina</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="5"><div class="empty"><div class="em-ic">🎓</div>Tiada murid dalam kelas ini.</div></td></tr>'}</tbody></table></div>
   </div>
   <div class="card" style="margin-top:16px;">
     <h2 style="margin-top:0;">Kelas (${DB.meta.classes.length})</h2>
@@ -1162,8 +1153,17 @@ function adminRekodHTML(){
     const tp = tpOf(s);
     const verified = !!DB.verifiedAll[s.id];
     const evCount = (DB.evidenceAll[s.id]||[]).filter(e=>!e.deleted).length;
+    const p = studentTopicProgress(s);
     return `<tr style="cursor:pointer;" onclick="openStudent('${s.id}')"><td><div class="trow"><div class="mini-avatar">${initials(s.name)}</div><b>${s.name}</b></div></td><td>${s.class}</td>
     <td><span class="pill tp${tp}">TP${tp}</span></td><td>${evCount}</td>
+    <td style="min-width:170px;">
+      <div class="prog-ascii" style="margin:0;font-size:10.5px;">${asciiBar(p.pct,12)} ${p.pct}%</div>
+      <div class="prog-stats" style="margin-top:5px;">
+        <span class="prog-stat lengkap">✅ ${p.lengkap}/${p.topicsTotal}</span>
+        <span class="prog-stat semak">🕓 ${p.sedangDisemak}</span>
+        <span class="prog-stat belum">⭕ ${p.belumHantar}</span>
+      </div>
+    </td>
     <td>${verified?'✅':'⏳'}</td>
     <td class="row-actions"><button class="btn ghost" onclick="event.stopPropagation(); openStudent('${s.id}')">Lihat</button></td></tr>`;
   }).join('');
@@ -1180,8 +1180,8 @@ function adminRekodHTML(){
       <select id="rekodTPFilter">${tpOpts}</select>
       <input id="rekodSearch" placeholder="🔍 Cari nama murid…" value="${VIEW.searchTerm||''}" style="min-width:180px;">
     </div>
-    <div class="table-scroll"><table><thead><tr><th>Nama</th><th>Kelas</th><th>TP</th><th>Eviden</th><th>Sah</th><th></th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="6"><div class="empty"><div class="em-ic">📝</div>Tiada murid dalam kelas ini.</div></td></tr>'}</tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th>Nama</th><th>Kelas</th><th>TP</th><th>Eviden</th><th>Kemajuan</th><th>Sah</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="7"><div class="empty"><div class="em-ic">📝</div>Tiada murid dalam kelas ini.</div></td></tr>'}</tbody></table></div>
   </div>`;
 }
 
@@ -1228,8 +1228,8 @@ function openUserModal(editIdx=null){
     <div class="field"><label>Peranan</label><select id="mURole"><option value="guru" ${u.role==='guru'?'selected':''}>Guru</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></div>
     <div class="field"><label>Jantina (untuk avatar profil)</label><select id="mUGender">
       <option value="" ${!u.gender?'selected':''}>— Tidak dinyatakan —</option>
-      <option value="L" ${u.gender==='L'?'selected':''}>👳🏻 Lelaki (Ustaz)</option>
-      <option value="P" ${u.gender==='P'?'selected':''}>🧕🏻 Perempuan (Cikgu)</option>
+      <option value="L" ${u.gender==='L'?'selected':''}>👳🏻 Ustaz (Lelaki)</option>
+      <option value="P" ${u.gender==='P'?'selected':''}>🧕🏻 Cikgu (Perempuan)</option>
     </select></div>
     <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Batal</button>
     <button class="btn" onclick="saveUser(${editIdx})">Simpan</button></div>
