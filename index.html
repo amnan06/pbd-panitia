@@ -1629,32 +1629,33 @@ async function paintDashboard(){
       <div class="stat-card-v2"><span class="icon-box c1">⭐</span><div><div class="n">${avgTP}</div><div class="l">Purata TP</div></div></div>
     </div>
     <div class="two-col" style="align-items:start;">
-      ${topClass ? `<div class="card" style="position:relative;overflow:hidden;padding:16px 18px;">
-        <h2 style="margin:0 0 10px;font-size:14px;">Kelas Terbaik 🏆</h2>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="font-size:34px;line-height:1;flex-shrink:0;">🏅</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:18px;font-weight:800;color:var(--tulisan);">${topClass.name}</div>
-            <div style="font-size:11.5px;color:var(--tulisan-lembut);margin-top:2px;">Tahniah! Teruskan usaha cemerlang.</div>
-          </div>
-          <span class="pill" style="background:#E4F0E6;color:var(--hijau-ok);font-size:12.5px;padding:6px 12px;flex-shrink:0;">${topClass.pct}%</span>
-        </div>
-      </div>` : '<div class="card"><h2 style="margin-top:0;font-size:14px;">Kelas Terbaik 🏆</h2><div class="empty" style="padding:8px 0;">Tiada data lagi.</div></div>'}
-      <div class="card">
-        <h2 style="margin-top:0;">🔔 Peringatan</h2>
-        ${alertHTML}
-      </div>
-    </div>
-    <div class="two-col">
       <div class="card">
         <h2 style="margin-top:0;">Kemajuan Setiap Kelas</h2>
         <div class="mini-tabs">${classTabsHTML}</div>
         <div class="student-list">${classPanelsHTML || '<div class="empty"><div class="em-ic">🏫</div>Tiada kelas didaftarkan.</div>'}</div>
       </div>
       <div class="card">
+        <h2 style="margin-top:0;">🔔 Peringatan</h2>
+        ${alertHTML}
+      </div>
+    </div>
+    <div class="two-col" style="align-items:start;margin-top:16px;">
+      <div class="card">
         <h2 style="margin-top:0;">Perbandingan Pencapaian Kelas</h2>
         <canvas id="classCompChart" height="180"></canvas>
       </div>
+      ${topClass ? `<div class="card" style="position:relative;overflow:hidden;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;">
+        <h2 style="margin:0 0 12px;font-size:14px;">Kelas Terbaik 🏆</h2>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:38px;line-height:1;flex-shrink:0;">🏅</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:19px;font-weight:800;color:var(--tulisan);">${topClass.name}</div>
+            <div style="font-size:11.5px;color:var(--tulisan-lembut);margin-top:2px;">Tahniah! Teruskan usaha cemerlang.</div>
+          </div>
+          <span class="pill" style="background:#E4F0E6;color:var(--hijau-ok);font-size:12.5px;padding:6px 12px;flex-shrink:0;">${topClass.pct}%</span>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--garis);font-size:12px;color:var(--tulisan-lembut);">Purata TP kelas ini: <b style="color:var(--hijau-gelap);">${topClass.avgTPc}</b></div>
+      </div>` : '<div class="card"><h2 style="margin-top:0;font-size:14px;">Kelas Terbaik 🏆</h2><div class="empty" style="padding:8px 0;">Tiada data lagi.</div></div>'}
     </div>
     <div class="section-head"><h2>📚 Tajuk Paling Ramai Belum Hantar</h2></div>
     <div class="card">${topicGapRows}</div>
