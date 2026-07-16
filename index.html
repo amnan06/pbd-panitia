@@ -47,6 +47,7 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 .btn.danger:hover{background:var(--merah);color:#fff;transform:none;}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
 input,select,textarea{font-family:'Inter',sans-serif;padding:10px 12px;border:1.5px solid var(--garis);border-radius:9px;font-size:14px;background:#fff;color:var(--tulisan);width:100%;}
+input[type="checkbox"]{width:17px;height:17px;padding:0;border:1.5px solid var(--garis);border-radius:4px;accent-color:var(--hijau);cursor:pointer;flex-shrink:0;}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--hijau);box-shadow:0 0 0 3px rgba(27,122,75,.1);}
 label{font-size:12px;font-weight:700;color:var(--tulisan-lembut);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em;}
 .field{margin-bottom:14px;}
@@ -1205,6 +1206,7 @@ function adminRekodHTML(){
   const search = (VIEW.searchTerm||'').toLowerCase().trim();
   const tpFilter = VIEW.rekodTPFilter||'ALL';
   const myClasses = visibleClasses();
+  const isAdmin = SESSION.role==='admin';
   const list = DB.students.filter(s=> !s.deleted && myClasses.includes(s.class) && (cls==='ALL' || s.class===cls) && (!search || s.name.toLowerCase().includes(search)) && (tpFilter==='ALL' || tpOf(s)===Number(tpFilter)));
   const allChecked = list.length>0 && list.every(s=>BULK_SELECTED.has(s.id));
   const rows = list.map((s)=>{
@@ -1213,7 +1215,7 @@ function adminRekodHTML(){
     const evCount = (DB.evidenceAll[s.id]||[]).filter(e=>!e.deleted).length;
     const p = studentTopicProgress(s);
     return `<tr style="cursor:pointer;" onclick="openStudent('${s.id}')">
-    <td onclick="event.stopPropagation();"><input type="checkbox" class="bulkChk" ${BULK_SELECTED.has(s.id)?'checked':''} onclick="toggleBulkSelect('${s.id}', this.checked)"></td>
+    ${isAdmin ? `<td onclick="event.stopPropagation();"><input type="checkbox" class="bulkChk" ${BULK_SELECTED.has(s.id)?'checked':''} onclick="toggleBulkSelect('${s.id}', this.checked)"></td>` : ''}
     <td><div class="trow"><div class="mini-avatar">${initials(s.name)}</div><b>${s.name}</b></div></td><td>${s.class}</td>
     <td><span class="pill tp${tp}">TP${tp}</span></td><td>${evCount}</td>
     <td style="min-width:155px;">
@@ -1232,12 +1234,13 @@ function adminRekodHTML(){
   }).join('');
   const opts = ['ALL',...myClasses].map(c=>`<option value="${c}" ${c===cls?'selected':''}>${c==='ALL'?'Semua Kelas':c}</option>`).join('');
   const tpOpts = ['ALL',1,2,3,4,5,6].map(t=>`<option value="${t}" ${String(t)===String(tpFilter)?'selected':''}>${t==='ALL'?'Semua TP':'TP'+t}</option>`).join('');
+  const colCount = isAdmin ? 8 : 7;
   return `
   <div class="card">
     <div class="toolbar" style="margin-top:0;">
       <button class="btn gold" onclick="openBulkUploadModal()">📤 Upload Pukal</button>
       <button class="btn ghost" onclick="exportStudentsCSV()">⬇ Eksport CSV</button>
-      ${BULK_SELECTED.size>0 ? `<button class="btn" onclick="bulkVerifySelected()">✅ Sahkan TP Terpilih (${BULK_SELECTED.size})</button>
+      ${isAdmin && BULK_SELECTED.size>0 ? `<button class="btn" onclick="bulkVerifySelected()">✅ Sahkan TP Terpilih (${BULK_SELECTED.size})</button>
       <button class="btn ghost" onclick="clearBulkSelect()">✕ Batal Pilihan</button>` : ''}
     </div>
     <div class="toolbar">
@@ -1245,8 +1248,8 @@ function adminRekodHTML(){
       <select id="rekodTPFilter">${tpOpts}</select>
       <input id="rekodSearch" placeholder="🔍 Cari nama murid…" value="${VIEW.searchTerm||''}" style="min-width:180px;">
     </div>
-    <div class="table-scroll"><table><thead><tr><th><input type="checkbox" ${allChecked?'checked':''} onchange="toggleBulkSelectAll(this.checked, ${JSON.stringify(list.map(s=>s.id))})"></th><th>Nama</th><th>Kelas</th><th>TP</th><th>Eviden</th><th>Kemajuan</th><th>Sah</th><th></th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="8"><div class="empty"><div class="em-ic">📝</div>Tiada murid dalam kelas ini.</div></td></tr>'}</tbody></table></div>
+    <div class="table-scroll"><table><thead><tr>${isAdmin ? `<th><input type="checkbox" ${allChecked?'checked':''} onchange="toggleBulkSelectAll(this.checked, ${JSON.stringify(list.map(s=>s.id))})"></th>` : ''}<th>Nama</th><th>Kelas</th><th>TP</th><th>Eviden</th><th>Kemajuan</th><th>Sah</th><th></th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="${colCount}"><div class="empty"><div class="em-ic">📝</div>Tiada murid dalam kelas ini.</div></td></tr>`}</tbody></table></div>
   </div>`;
 }
 function toggleBulkSelect(id, checked){
@@ -1307,7 +1310,7 @@ async function paintLaporan(){
 function openUserModal(editIdx=null){
   const u = editIdx!=null ? DB.meta.users[editIdx] : {name:'',username:'',password:'',role:'guru',gender:'',classes:[]};
   const assigned = u.classes||[];
-  const classChecks = DB.meta.classes.map(c=>`<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:4px 0;"><input type="checkbox" class="mUClassChk" value="${c}" ${assigned.includes(c)?'checked':''}> ${c}</label>`).join('');
+  const classChecks = DB.meta.classes.map(c=>`<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 2px;margin-bottom:0;text-transform:none;color:var(--tulisan);cursor:pointer;"><input type="checkbox" class="mUClassChk" value="${c}" ${assigned.includes(c)?'checked':''}> ${c}</label>`).join('');
   showModal(`
     <h3>${editIdx!=null?'Edit Akaun':'Tambah Akaun Guru'}</h3>
     <div class="field"><label>Nama Penuh</label><input id="mUName" value="${u.name}"></div>
