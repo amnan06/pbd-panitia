@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#17335C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PBD Islam">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png" type="image/png">
 <title>Sistem Pengurusan Eviden PBD — Pendidikan Islam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -319,7 +327,9 @@ async function sGet(key){
 }
 async function sSet(key, value){
   const r = await apiCall({action:'set', key, value: JSON.stringify(value)}, 'POST');
-  return r.__error ? null : true;
+  if(r.__error) return null;
+  try{ saveDBCache(); }catch(e){ /* DB/cache belum sedia lagi (contoh: semasa boot awal) — abaikan */ }
+  return true;
 }
 async function uploadFileToDrive(filename, mimeType, base64){
   const r = await apiCall({action:'uploadFile', filename, mimeType, base64}, 'POST');
@@ -331,6 +341,24 @@ function initials(name){
 
 /* ============ APP STATE ============ */
 let DB = { meta:null, students:[], evidenceAll:{}, notesAll:{}, overridesAll:{}, verifiedAll:{}, anecdotesAll:{}, activityLog:[], topicCriteria:{}, tpDescriptors:{}, reminders:[], checklistAll:{} };
+const DB_CACHE_KEY = 'pbd_db_cache_v1';
+function loadDBCache(){
+  try{
+    const raw = localStorage.getItem(DB_CACHE_KEY);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    if(!parsed || !parsed.data || !parsed.data.meta) return null;
+    return parsed;
+  }catch(e){ return null; }
+}
+function saveDBCache(){
+  try{
+    const snapshot = { meta:DB.meta, students:DB.students, evidenceAll:DB.evidenceAll, notesAll:DB.notesAll,
+      overridesAll:DB.overridesAll, verifiedAll:DB.verifiedAll, anecdotesAll:DB.anecdotesAll, activityLog:DB.activityLog,
+      topicCriteria:DB.topicCriteria, tpDescriptors:DB.tpDescriptors, reminders:DB.reminders, checklistAll:DB.checklistAll };
+    localStorage.setItem(DB_CACHE_KEY, JSON.stringify({ ts:Date.now(), data:snapshot }));
+  }catch(e){ /* storan penuh/tak tersedia — abaikan senyap, tak kritikal */ }
+}
 let SESSION = null;
 let VIEW = { page:'login', tab:'guru', classFilter:'ALL', studentId:null };
 let BULK_SELECTED = new Set();
@@ -516,6 +544,26 @@ function renderSetup(prefillErr){
 /* ============ INIT / SEED ============ */
 async function boot(){
   if(!API_URL){ renderSetup(); return; }
+  const cached = loadDBCache();
+  if(cached){
+    // Papar cache SERTA-MERTA (tiada tunggu rangkaian) — data sebenar disahkan/dikemas kini di latar belakang selepas ini.
+    DB.meta = cached.data.meta; DB.students = cached.data.students||[]; DB.evidenceAll = cached.data.evidenceAll||{};
+    DB.notesAll = cached.data.notesAll||{}; DB.overridesAll = cached.data.overridesAll||{}; DB.verifiedAll = cached.data.verifiedAll||{};
+    DB.anecdotesAll = cached.data.anecdotesAll||{}; DB.activityLog = cached.data.activityLog||[]; DB.topicCriteria = cached.data.topicCriteria||{};
+    DB.tpDescriptors = cached.data.tpDescriptors||{}; DB.reminders = cached.data.reminders||[]; DB.checklistAll = cached.data.checklistAll||{};
+    const savedUsername = localStorage.getItem('pbd_session_user');
+    if(savedUsername){
+      const found = DB.meta.users.find(x=>x.username===savedUsername);
+      if(found){ SESSION = found; if(found.role==='admin') renderAdmin(); else renderGuru(); }
+      else renderLogin();
+    } else renderLogin();
+    refreshFromServer(); // sahkan & kemas kini senyap-senyap di latar
+    return;
+  }
+  await refreshFromServer(true);
+}
+// Ambil data SEBENAR dari Google Sheets. isFirstLoad=true bila tiada cache lagi (kena tunggu & papar loading screen).
+async function refreshFromServer(isFirstLoad){
   const [meta0, students0, evidenceAll0, notesAll0, overridesAll0, verifiedAll0, anecdotesAll0, activityLog0, topicCriteria0, tpDescriptors0, reminders0, checklistAll0] = await Promise.all([
     sGet('meta'), sGet('students'), sGet('evidenceAll'), sGet('notesAll'), sGet('overridesAll'),
     sGet('verifiedAll'), sGet('anecdotesAll'), sGet('activityLog'), sGet('topicCriteria'), sGet('tpDescriptors'),
@@ -532,7 +580,8 @@ async function boot(){
   };
   const failedKeys = Object.keys(criticalKeys).filter(k=>criticalKeys[k]===undefined);
   if(failedKeys.length>0){
-    renderBootError(failedKeys);
+    if(isFirstLoad) renderBootError(failedKeys);
+    // kalau bukan first load (dah ada cache dipaparkan), gagal senyap sahaja — kekalkan apa yang ada di skrin, jangan ganggu guru
     return;
   }
   let meta = meta0;
@@ -582,13 +631,24 @@ async function boot(){
   if(!DB.tpDescriptors["4"]){ DB.tpDescriptors["4"] = JSON.parse(JSON.stringify(SEED_TP_TEXT_YEAR4)); tpSeeded=true; }
   if(!DB.tpDescriptors["6"]){ DB.tpDescriptors["6"] = JSON.parse(JSON.stringify(SEED_TP_TEXT_YEAR6)); tpSeeded=true; }
   if(tpSeeded){ await sSet('tpDescriptors', DB.tpDescriptors); }
+  saveDBCache();
   const savedUsername = localStorage.getItem('pbd_session_user');
   if(savedUsername){
     const found = DB.meta.users.find(x=>x.username===savedUsername);
-    if(found){ SESSION = found; if(found.role==='admin') { renderAdmin(); } else { renderGuru(); } return; }
+    if(found){
+      SESSION = found;
+      // kemas kini senyap: kalau dah pun sedang lihat dashboard (dari cache), lukis semula dengan data sebenar —
+      // TAPI jangan ganggu kalau ada modal/borang sedang dibuka (elak hilang input yang belum simpan)
+      if(VIEW && VIEW.page!=='login' && !document.getElementById('modalBg')){
+        if(found.role==='admin') renderAdmin(); else renderGuru();
+        return;
+      }
+      if(VIEW && VIEW.page!=='login') return; // data DB dah dikemas kini senyap dalam memori; render seterusnya akan guna data terkini
+      if(found.role==='admin') { renderAdmin(); } else { renderGuru(); } return;
+    }
     localStorage.removeItem('pbd_session_user');
   }
-  renderLogin();
+  if(isFirstLoad) renderLogin();
 }
 
 async function logActivity(action, detail){
@@ -625,13 +685,51 @@ function renderLogin(){
   document.getElementById('liBtn').onclick=async ()=>{
     const u = document.getElementById('liUser').value.trim();
     const p = document.getElementById('liPass').value;
+    const errEl = document.getElementById('liErr');
+    const lockInfo = getLoginLock(u);
+    if(lockInfo.lockedMs>0){
+      errEl.textContent = `Terlalu banyak percubaan gagal. Cuba lagi dalam ${Math.ceil(lockInfo.lockedMs/1000)} saat.`;
+      return;
+    }
     const found = DB.meta.users.find(x=>x.username===u && x.password===p);
-    if(!found){ document.getElementById('liErr').textContent='Nama pengguna atau kata laluan salah.'; return; }
+    if(!found){
+      const attempts = recordFailedLogin(u);
+      const remaining = Math.max(0, 5-attempts);
+      errEl.textContent = remaining>0 ? `Nama pengguna atau kata laluan salah. (${remaining} percubaan lagi sebelum dikunci sementara)` : 'Terlalu banyak percubaan gagal. Akaun dikunci sementara selama 5 minit.';
+      return;
+    }
+    clearFailedLogin(u);
     SESSION = found;
     localStorage.setItem('pbd_session_user', found.username);
+    found.lastLogin = new Date().toISOString();
+    sSet('meta', DB.meta);
     if(found.role==='admin') renderAdmin(); else renderGuru();
   };
   document.getElementById('liPass').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('liBtn').click(); });
+}
+/* --- Sekatan percubaan log masuk salah (anti brute-force ringkas, tersimpan tempatan) --- */
+function getLoginLock(username){
+  try{
+    const raw = localStorage.getItem('pbd_login_attempts_'+username);
+    if(!raw) return {attempts:0, lockedMs:0};
+    const d = JSON.parse(raw);
+    if(d.lockedUntil && Date.now()<d.lockedUntil) return {attempts:d.attempts, lockedMs:d.lockedUntil-Date.now()};
+    if(d.lockedUntil && Date.now()>=d.lockedUntil){ localStorage.removeItem('pbd_login_attempts_'+username); return {attempts:0, lockedMs:0}; }
+    return {attempts:d.attempts||0, lockedMs:0};
+  }catch(e){ return {attempts:0, lockedMs:0}; }
+}
+function recordFailedLogin(username){
+  try{
+    const cur = getLoginLock(username);
+    const attempts = cur.attempts+1;
+    const data = {attempts};
+    if(attempts>=5){ data.lockedUntil = Date.now()+5*60*1000; } // kunci 5 minit selepas 5 percubaan gagal
+    localStorage.setItem('pbd_login_attempts_'+username, JSON.stringify(data));
+    return attempts;
+  }catch(e){ return 0; }
+}
+function clearFailedLogin(username){
+  try{ localStorage.removeItem('pbd_login_attempts_'+username); }catch(e){}
 }
 
 function logout(){ SESSION=null; localStorage.removeItem('pbd_session_user'); renderLogin(); }
@@ -815,9 +913,65 @@ async function paintSelenggara(){
       <button class="btn gold" onclick="addReminder()">+ Tambah</button></div>
       <div style="margin-top:8px;">${remindRows}</div>
     </div>
+    <div class="card" style="margin-top:16px;">
+      <h2 style="margin-top:0;">🗓️ Sesi Akademik Baru</h2>
+      <p style="font-size:12.5px;color:var(--tulisan-lembut);">Bila sesi persekolahan tamat, guna ini untuk <b>arkibkan</b> semua eviden, TP, catatan &amp; pengesahan tahun semasa (selamat, boleh dimuat turun bila-bila masa), kemudian <b>bersihkan</b> data tracking untuk mula sesi baru dari kosong. <b>Senarai murid, kelas, tajuk dan akaun guru TIDAK disentuh</b> — cuma data pencapaian/eviden yang direset.</p>
+      <div style="background:var(--tint-warn);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--tulisan-lembut);margin-bottom:14px;">
+        📌 Data semasa: <b>${(DB.students||[]).filter(s=>!s.deleted).length} murid</b> &middot; <b>${Object.values(DB.evidenceAll||{}).flat().filter(e=>e&&!e.deleted).length} eviden</b> &middot; <b>${Object.keys(DB.verifiedAll||{}).length} rekod disahkan</b>
+      </div>
+      <div class="toolbar"><input id="sesiLabel" placeholder="Nama sesi (cth: Sesi 2026)" style="flex:1;" value="Sesi ${new Date().getFullYear()}">
+      <button class="btn danger" onclick="startNewSession()">🗄️ Arkib &amp; Mula Sesi Baru</button></div>
+      <div style="margin-top:16px;">
+        <h3 style="font-size:13px;margin:0 0 8px;">Arkib Sesi Lepas (${(DB.meta.archiveSessions||[]).length})</h3>
+        ${(DB.meta.archiveSessions||[]).length ? (DB.meta.archiveSessions||[]).slice().reverse().map(a=>`
+          <div class="ev-item" style="padding:9px 0;">
+            <div class="ev-info"><div class="t" style="font-size:13px;">${a.label}</div><div class="d">${new Date(a.ts).toLocaleDateString('ms-MY')} &middot; ${a.studentCount} murid diarkibkan</div></div>
+            <button class="btn ghost" style="padding:6px 12px;font-size:12px;flex-shrink:0;" onclick="downloadArchive('${a.key}','${a.label}')">⬇ Muat Turun</button>
+          </div>`).join('') : '<div class="empty" style="padding:14px;"><div class="em-ic">🗄️</div>Tiada arkib lagi.</div>'}
+      </div>
+    </div>
   `;
   el.innerHTML = appShell('selenggara', content);
   wireShellNav(navigateShared);
+}
+async function startNewSession(){
+  const label = (document.getElementById('sesiLabel').value||'').trim() || ('Sesi '+new Date().getFullYear());
+  const studentCount = (DB.students||[]).filter(s=>!s.deleted).length;
+  const evCount = Object.values(DB.evidenceAll||{}).flat().filter(e=>e&&!e.deleted).length;
+  if(!confirm(`Awak akan ARKIBKAN "${label}" (${studentCount} murid, ${evCount} eviden) dan BERSIHKAN semua eviden/TP/pengesahan/catatan semasa untuk mula sesi baru dari kosong.\n\nSenarai murid, kelas, tajuk dan akaun guru TIDAK akan disentuh.\n\nTindakan ini TIDAK BOLEH DIBATALKAN (tapi arkib boleh dimuat turun bila-bila masa). Teruskan?`)) return;
+  if(!confirm('Sahkan sekali lagi: anda PASTI mahu arkib & reset sesi sekarang?')) return;
+  toast('Mengarkibkan sesi...');
+  const archiveKey = 'archive_'+Date.now();
+  const snapshot = {
+    label, archivedAt:new Date().toISOString(),
+    students: DB.students, evidenceAll: DB.evidenceAll, verifiedAll: DB.verifiedAll,
+    notesAll: DB.notesAll, overridesAll: DB.overridesAll, anecdotesAll: DB.anecdotesAll, checklistAll: DB.checklistAll
+  };
+  const ok1 = await sSet(archiveKey, snapshot);
+  if(ok1===null){ toast('Gagal arkibkan. Cuba lagi.', true); return; }
+  if(!DB.meta.archiveSessions) DB.meta.archiveSessions = [];
+  DB.meta.archiveSessions.push({key:archiveKey, label, ts:new Date().toISOString(), studentCount});
+  const ok2 = await sSet('meta', DB.meta);
+  if(ok2===null){ toast('Arkib disimpan, tapi gagal kemas kini senarai. Cuba lagi.', true); return; }
+  DB.evidenceAll = {}; DB.verifiedAll = {}; DB.notesAll = {}; DB.overridesAll = {}; DB.anecdotesAll = {}; DB.checklistAll = {};
+  await Promise.all([
+    sSet('evidenceAll', DB.evidenceAll), sSet('verifiedAll', DB.verifiedAll), sSet('notesAll', DB.notesAll),
+    sSet('overridesAll', DB.overridesAll), sSet('anecdotesAll', DB.anecdotesAll), sSet('checklistAll', DB.checklistAll)
+  ]);
+  logActivity('Mula Sesi Akademik Baru', label+' — arkib '+studentCount+' murid, '+evCount+' eviden');
+  toast('Sesi baru bermula! Data lama selamat diarkibkan.');
+  paintSelenggara();
+}
+async function downloadArchive(key, label){
+  toast('Menyediakan muat turun...');
+  const data = await sGet(key);
+  if(data===undefined || data===null){ toast('Gagal muat arkib.', true); return; }
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'arkib-'+label.replace(/\s+/g,'-')+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }
 async function addReminder(){
   const title = document.getElementById('remTitle').value.trim();
@@ -1128,18 +1282,23 @@ async function importFullSystemBackup(file){
 }
 
 function adminGuruHTML(){
-  const rows = DB.meta.users.map((u,i)=>`
-    <tr><td><div class="trow">${avatarFor(u,34)}<b>${u.name}</b></div></td><td>${u.username}</td><td>${u.role==='admin'?'Admin':'Guru'}</td>
+  const rows = DB.meta.users.map((u,i)=>{
+    const lastLoginTxt = u.lastLogin ? new Date(u.lastLogin).toLocaleString('ms-MY',{dateStyle:'medium',timeStyle:'short'}) : '<span style="color:var(--tulisan-lembut);">Belum log masuk</span>';
+    const contactTxt = [u.phone, u.email].filter(Boolean).join(' &middot; ') || '<span style="color:var(--tulisan-lembut);">—</span>';
+    return `<tr><td><div class="trow">${avatarFor(u,34)}<b>${u.name}</b></div></td><td>${u.username}</td><td>${u.role==='admin'?'Admin':'Guru'}</td>
+    <td style="font-size:12.5px;">${contactTxt}</td>
+    <td style="font-size:12px;white-space:nowrap;">${lastLoginTxt}</td>
     <td class="row-actions">
       <button class="btn ghost" onclick="editUser(${i})">Edit</button>
       ${u.username!=='admin' ? `<button class="btn danger" onclick="deleteUser(${i})">Padam</button>`:''}
-    </td></tr>`).join('');
+    </td></tr>`;
+  }).join('');
   return `
   <div class="card">
     <div class="section-head" style="margin-top:0;"><h2>Senarai Akaun (${DB.meta.users.length})</h2>
       <button class="btn gold" onclick="openUserModal()">+ Tambah Guru</button></div>
-    <div class="table-scroll"><table><thead><tr><th>Nama</th><th>Nama Pengguna</th><th>Peranan</th><th></th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="4"><div class="empty"><div class="em-ic">👤</div>Tiada akaun lagi.</div></td></tr>'}</tbody></table></div>
+    <div class="table-scroll"><table><thead><tr><th>Nama</th><th>Nama Pengguna</th><th>Peranan</th><th>Telefon/Emel</th><th>Log Masuk Terakhir</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="6"><div class="empty"><div class="em-ic">👤</div>Tiada akaun lagi.</div></td></tr>'}</tbody></table></div>
   </div>`;
 }
 
@@ -1308,7 +1467,7 @@ async function paintLaporan(){
 
 /* --- Admin: user CRUD --- */
 function openUserModal(editIdx=null){
-  const u = editIdx!=null ? DB.meta.users[editIdx] : {name:'',username:'',password:'',role:'guru',gender:'',classes:[]};
+  const u = editIdx!=null ? DB.meta.users[editIdx] : {name:'',username:'',password:'',role:'guru',gender:'',classes:[],phone:'',email:''};
   const assigned = u.classes||[];
   const classChecks = DB.meta.classes.map(c=>`<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 2px;margin-bottom:0;text-transform:none;color:var(--tulisan);cursor:pointer;"><input type="checkbox" class="mUClassChk" value="${c}" ${assigned.includes(c)?'checked':''}> ${c}</label>`).join('');
   showModal(`
@@ -1322,6 +1481,8 @@ function openUserModal(editIdx=null){
       <option value="L" ${u.gender==='L'?'selected':''}>Lelaki</option>
       <option value="P" ${u.gender==='P'?'selected':''}>Perempuan</option>
     </select></div>
+    <div class="field"><label>Nombor Telefon</label><input id="mUPhone" value="${u.phone||''}" placeholder="012-3456789"></div>
+    <div class="field"><label>Emel</label><input id="mUEmail" value="${u.email||''}" placeholder="nama@contoh.com"></div>
     <div class="field"><label>Kelas Ditugaskan (kosongkan = nampak SEMUA kelas)</label>
       <div style="max-height:150px;overflow-y:auto;border:1px solid var(--garis);border-radius:8px;padding:8px 12px;">${classChecks || '<span style="font-size:12px;color:var(--tulisan-lembut);">Tiada kelas didaftarkan.</span>'}</div>
     </div>
@@ -1336,12 +1497,15 @@ async function saveUser(editIdx){
   const password=document.getElementById('mUPass').value;
   const role=document.getElementById('mURole').value;
   const gender=document.getElementById('mUGender').value;
+  const phone=document.getElementById('mUPhone').value.trim();
+  const email=document.getElementById('mUEmail').value.trim();
   const classes=[...document.querySelectorAll('.mUClassChk:checked')].map(el=>el.value);
   if(!name||!username||!password){ toast('Sila lengkapkan semua ruangan.', true); return; }
   const dup = DB.meta.users.find((u,i)=>u.username===username && i!==editIdx);
   if(dup){ toast('Nama pengguna telah digunakan.', true); return; }
-  if(editIdx!=null){ DB.meta.users[editIdx] = {name,username,password,role,gender,classes}; }
-  else { DB.meta.users.push({name,username,password,role,gender,classes}); }
+  const existingExtra = editIdx!=null ? {lastLogin: DB.meta.users[editIdx].lastLogin} : {};
+  if(editIdx!=null){ DB.meta.users[editIdx] = {...existingExtra, name,username,password,role,gender,classes,phone,email}; }
+  else { DB.meta.users.push({name,username,password,role,gender,classes,phone,email}); }
   const ok = await sSet('meta', DB.meta);
   if(ok===null){ toast('Gagal simpan ke Google Sheets. Cuba lagi.', true); if(editIdx==null) DB.meta.users.pop(); return; }
   closeModal(); toast('Akaun disimpan.'); logActivity('Simpan Akaun Guru', name+' ('+username+')');
@@ -2515,6 +2679,9 @@ function toggleTheme(){
 })();
 
 boot();
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 </script>
 </body>
 </html>
